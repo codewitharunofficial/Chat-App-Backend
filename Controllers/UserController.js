@@ -23,9 +23,6 @@ export const newUser = async (req, res) => {
         if(!answer) {
             return res.send({message: 'Answer Is Required for Security Purpose'});
         }
-        if(!profilePhoto) {
-            return res.send({message: 'Photo Is Required'});
-        }
 
         const existingUser = await userModel.findOne({phone});
 
