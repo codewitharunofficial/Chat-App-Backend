@@ -4,9 +4,9 @@ export const sendMessage = async (req, res) => {
     try {
         const {sender, reciever, message} = req.fields;
         switch(true) {
-            case !sender: throw new Error("Receipent Is Required");
+            case !sender: throw new Error("Sender Is Required");
             case !message: throw new Error("Message Can't Be Empty");
-            case !reciever: throw new Error("Reciever Is Required");
+            case !reciever: throw new Error("Receipent Is Required");
         }
 
         const coversation = new ChatModel({...req.fields});

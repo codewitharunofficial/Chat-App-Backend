@@ -24,8 +24,7 @@ const userSchema = new mongoose.Schema({
       required: true
      },
      profilePhoto: {
-      data: Buffer,
-      contentType: String
+      type: {}
      },
      Is_Online: {
       type: String,

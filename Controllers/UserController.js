@@ -4,8 +4,9 @@ import JWT from 'jsonwebtoken';
 import fs from 'fs'
 
 export const newUser = async (req, res) => {
-    const {name, phone, email, password, answer} = req.fields;
-    const {profilePhoto} = req.files;
+    const {name, phone, email, password, answer} = req.body;
+    console.log(req.body);
+    // const {profilePhoto} = req.files;
 
     try {
         if(!name) {
@@ -34,19 +35,22 @@ export const newUser = async (req, res) => {
 
             const hanshedPassword = await hashPassword(password);
             
-            const user =  new userModel({...req.fields, password: hanshedPassword});
+            const user =  new userModel({...req.body, password: hanshedPassword});
 
-            if(profilePhoto) {
-                user.profilePhoto.data = fs.readFileSync(profilePhoto.path);
-                user.profilePhoto.contentType = profilePhoto.type;
-            }
+            // if(profilePhoto) {
+            //     user.profilePhoto.data = fs.readFileSync(profilePhoto.path);
+            //     user.profilePhoto.contentType = profilePhoto.type;
+            // }
+
+            const token =  JWT.sign({_id: user._id}, process.env.JWT_SECRET, {expiresIn: '7d'});
             
             await user.save();
             
             res.status(200).send({
                 success: true,
                 message: 'Registration Successfull',
-                user 
+                user,
+                token
             })
         }
 
@@ -63,52 +67,99 @@ export const newUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
     try {
-        const {phone, password} = req.fields;
+        
+        const {phone, password} = req.body;
 
-        if(!phone) {
-            res.send({error: 'Phone is Required'})
+        switch(true) {
+            case !phone: throw new Error("Phone Is Required");
+            case !password: throw new Error("Password Is Required");
         }
-        if(!password) {
-            res.send({error: 'Password is Required'})
-        }
 
-        const user = await userModel.findOne({phone: phone});
+        const user = await userModel.findOne({phone});
 
-        if(!user) {
-            res.status(400).send({
+        if(!user){
+            return res.status(200).send({
                 success: false,
-                message: 'Phone No. Is Not Registered, SignUp to Get Started'
+                message: "Phone No. Isn't Registered, SignUp to get Started"
             })
-        } else {
-            const match = await comparePassword(password, user.password);
-
-            if(!match) {
-                res.status(400).send({
-                    success: false,
-                    message: 'Invalid Password'
-                })
-            } else {
-                const token = JWT.sign({_id: user._id}, process.env.JWT_SECRET, {expiresIn: '7d'});
-                res.status(200).send({
-                    success: true,
-                    message: 'Logged In Successfully',
-                    user:  {
-                        _id: user._id,
-                        name: user.name,
-                        phone: user.phone,
-                        email: user.email,
-                        
-                    },
-                    token
-                })
-            }
         }
+
+        const match = await comparePassword(password, user.password);
+
+        if(!match) {
+            return res.status(200).send({
+                success: false,
+                message: "Invalid Password"
+            });
+        }
+
+        const token =  JWT.sign({_id: user._id}, process.env.JWT_SECRET, {expiresIn: '7d'});
+
+        res.status(200).send({
+            success: true,
+            message: `Welcome ${user.name}`,
+            user: {
+                _id: user._id,
+                name: user.name,
+                phone: user.phone,
+                email: user.email,
+                photo: user.profilePhoto,
+            },
+            token
+        });
 
     } catch (error) {
         res.status(400).send({
             success: false,
-            message: 'Something Went wrong',
-            error
+            message: 'Something Went Wrong!',
+            error: error.message
+        });
+    }
+}
+
+
+export const fetchAllUsers = async (req, res) => {
+    try {
+        
+
+        const users = await userModel.find({}).select(["-profilePhoto", "-password"]).sort({createdAt : -1});
+        res.status(200).send({
+            success: true,
+            message: 'Users Fetching Successfull',
+            users
+        })
+
+    } catch (error) {
+        res.status(400).send({
+            success: false,
+            message: "Something went wrong",
+            error: error.message
+        })
+    }
+}
+
+
+export const getUser = async (req, res) => {
+    try {
+
+        const {id} = req.params;
+
+        if(!id) {
+            throw new Error("ID is required")
+        }
+
+        const user = await userModel.findOne({_id: id})
+        res.status(200).send({
+            success: true,
+            message: "Fetching User Succcessfull",
+            user,
+        })
+        
+    } catch (error) {
+        res.status(400).send({
+            success: false,
+            message: "Something Went Wrong",
+            error: error.message
         })
     }
 }
