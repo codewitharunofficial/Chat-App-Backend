@@ -1,6 +1,7 @@
 import express from 'express';
-import { fetchAllUsers, getUser, loginUser, newUser } from '../Controllers/UserController.js';
+import { fetchAllUsers, getUser, loginUser, newUser, searchUser } from '../Controllers/UserController.js';
 import ExpressFormidable from 'express-formidable';
+import { requireSignIn } from '../MiddleWares/IsActive.js';
 
 
 const router = express.Router();
@@ -18,11 +19,11 @@ router.post('/create-user', newUser);
 
 router.post('/login', loginUser);
 
-router.get('/fetch-users', fetchAllUsers);
+router.get('/fetch-users', requireSignIn, fetchAllUsers);
 
-router.get('/get-user/:id', getUser);
+router.get('/get-user/:id', requireSignIn, getUser);
 
-
+router.get('/search-user/:keyword', searchUser);
 
 
 

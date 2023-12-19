@@ -26,10 +26,10 @@ const io = new Server(server);
 
 
 io.on('connection', (socket) => {
-    console.log(`A new User Connected with ${socket.id}`);
+    console.log('User Connected' + socket.id);
 
     io.on('disconnect', (socket) => {
-        console.log("User Disconnected")
+        console.log("User Disconnected" + " " + socket.id);
     })
     
 })
@@ -40,6 +40,11 @@ app.use(express.json());
 app.use(express.urlencoded({
     extended: true
 }));
+
+app.use((req, res, next) => {
+    req.io = io;
+    return next();
+  });
 
 
 app.use('/api/v1/messages', MessageRoutes);

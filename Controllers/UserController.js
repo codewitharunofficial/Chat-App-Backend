@@ -163,3 +163,31 @@ export const getUser = async (req, res) => {
         })
     }
 }
+
+
+export const searchUser = async (req, res) => {
+    try {
+  
+      const { keyword } = req.params;
+      const searchedResults = await userModel.find({
+        $or: [
+          { name: { $regex: keyword, $options: 'i' } },
+          { phone: { $regex: keyword, $options: 'i' } }
+        ]
+      });
+  
+      res.status(200).send({
+        success: true,
+        message: "User Found",
+        searchedResults
+      })
+  
+    } catch (error) {
+      console.log(error)
+      res.status(400).send({
+        success: false,
+        message: "Error While Searching User",
+        error
+      })
+    }
+  }
