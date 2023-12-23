@@ -8,6 +8,8 @@ import mediaRoutes from './Routes/mediaRoutes.js';
 import http from 'http';
 import {Server} from 'socket.io';
 // import formidableMiddleware from 'express-formidable';
+import ConversationModel from './Models/ConversationModel.js';
+import ChatModel from './Models/ChatModel.js';
 
 dotenv.config();
 
@@ -28,18 +30,25 @@ const io = new Server(server);
 io.on('connection', (socket) => {
     console.log('User Connected' + socket.id);
 
+    socket.on('send-message', async(data) => {
+        console.log('Recieved a message in server side', data);
+                const newMessage = new ChatModel({sender: data.sender, reciever: data.reciever, message: data.message});
+                await newMessage.save();             
+                const chat = await ConversationModel.findByIdAndUpdate({_id: data.convoId}, {chat: newMessage}, {new: true}).sort({createdAt: -1});
+                await chat.save();
+                
+            io.emit('recieved-message', {newMessage});
+        
+    });
+
     io.on('disconnect', (socket) => {
-        console.log("User Disconnected" + " " + socket.id);
+        console.log("User Disconnected");
     })
-    
 })
 
 app.use(cors());
 app.use(express.json());
-// app.use(formidableMiddleware());
-app.use(express.urlencoded({
-    extended: true
-}));
+
 
 app.use((req, res, next) => {
     req.io = io;

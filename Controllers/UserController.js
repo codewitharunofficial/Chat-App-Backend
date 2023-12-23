@@ -191,3 +191,27 @@ export const searchUser = async (req, res) => {
       })
     }
   }
+
+  export const getUserPhoto = async (req, res) => {
+    try {
+        console.log(req.params);
+        const {id} = req.params;
+
+        const user = await userModel.findOne({_id: id});
+        if(!user) {
+            res.status(400).send({
+                success: false,
+                message: "No user found",
+            })
+        } else {
+            const photo = await  userModel.findOne({_id: id}).select(["profilePhoto"]);
+            res.status(200).send({
+                success: true,
+                message: "User's Photo Fetched Successfully",
+                photo: photo.profilePhoto.url
+            })
+        }
+    } catch (error) {
+        
+    }
+  }

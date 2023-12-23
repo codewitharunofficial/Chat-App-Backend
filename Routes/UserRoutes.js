@@ -1,5 +1,5 @@
 import express from 'express';
-import { fetchAllUsers, getUser, loginUser, newUser, searchUser } from '../Controllers/UserController.js';
+import { fetchAllUsers, getUser, getUserPhoto, loginUser, newUser, searchUser } from '../Controllers/UserController.js';
 import ExpressFormidable from 'express-formidable';
 import { requireSignIn } from '../MiddleWares/IsActive.js';
 
@@ -24,6 +24,8 @@ router.get('/fetch-users', requireSignIn, fetchAllUsers);
 router.get('/get-user/:id', requireSignIn, getUser);
 
 router.get('/search-user/:keyword', searchUser);
+
+router.get('/get-photo/:id', getUserPhoto);
 
 
 
