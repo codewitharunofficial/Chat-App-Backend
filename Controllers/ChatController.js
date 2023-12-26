@@ -70,8 +70,6 @@ export const createConvo = async (req, res) => {
         }
 
         }
-
-
         
       } catch (error) {
            res.status(400).send({
@@ -88,7 +86,7 @@ export const getAllChats = async (req, res) => {
          try {
             const {id} = req.params;
 
-         const chats = await ConversationModel.find({$or: [{senderId: id} , {receiverId: id}]});
+         const chats = await ConversationModel.find({$or: [{senderId: id} , {receiverId: id}]}).sort({updatedAt: -1});
 
          if(!chats) {
             res.status(401).send({

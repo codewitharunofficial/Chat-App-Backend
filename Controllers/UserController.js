@@ -5,7 +5,6 @@ import fs from 'fs'
 
 export const newUser = async (req, res) => {
     const {name, phone, email, password, answer} = req.body;
-    console.log(req.body);
     // const {profilePhoto} = req.files;
 
     try {
@@ -194,7 +193,6 @@ export const searchUser = async (req, res) => {
 
   export const getUserPhoto = async (req, res) => {
     try {
-        console.log(req.params);
         const {id} = req.params;
 
         const user = await userModel.findOne({_id: id});
@@ -214,4 +212,37 @@ export const searchUser = async (req, res) => {
     } catch (error) {
         
     }
+  }
+
+  export const updateUser = async (req, res) => {
+ 
+       try {
+        const {id} = req.params;
+       const {name, phone, email} = req.body;
+
+       switch(true) {
+        case !name : throw new Error("Name Can't Be Empty");
+        case !phone : throw new Error("Phone Can't Be Empty");
+        case !email : throw new Error("Email Can't Be Empty");
+
+       }
+
+       const user = await userModel.findByIdAndUpdate({_id: id}, {name: name, phone: phone, email: email}, {new: true});
+
+       await user.save();
+       console.log(user);
+
+       res.status(200).send({
+        success: true,
+        message: "User Updated Successfully",
+        user
+       });
+
+       } catch (error) {
+           res.status(400).send({
+            success: false,
+            message: 'Something Went Wrong',
+            error: error.message
+           })
+       }
   }
