@@ -32,7 +32,6 @@ export const sendMessage = async (req, res) => {
 
 export const createConvo = async (req, res) => {
       try {
-        console.log(req.body)
         const {sender, receiver} = req.body;
 
         const user1 = await userModel.findOne({_id: receiver});
@@ -82,7 +81,7 @@ export const createConvo = async (req, res) => {
 
 
 export const getAllChats = async (req, res) => {
-    console.log(req.params);
+    
          try {
             const {id} = req.params;
 
@@ -107,6 +106,38 @@ export const getAllChats = async (req, res) => {
                 error: error.message
             })
          }
+}
+
+
+export const deleteConversation = async (req, res) => {
+      try {
+        const {id} = req.params;
+
+        switch(true) {
+            case !id: throw new Error("Coversation ID is required to make a delete request");
+        }
+
+        const convo = await ConversationModel.findByIdAndDelete({_id: id});
+        if(!convo) {
+            res.status(201).send({
+                success: false,
+                message: "Either The Conversation Doesn't Exist Or Has Already Been Deleted"
+            })
+        } else {
+            res.status(200).send({
+                success: true,
+                message: "Coversation Has Been Deleted Successfully"
+            })
+        }
+
+      } catch (error) {
+         res.status(400).send({
+            success: false,
+            message: "Something Went Wrong",
+            error: error.message
+         })
+      }
+
 }
 
 export const getAllMessages = async (req, res) => {
@@ -139,4 +170,34 @@ export const getAllMessages = async (req, res) => {
             error: error.message
         })
     }
+}
+
+export const deleteMessage = async (req, res) => {
+      try {
+        const {id} = req.params;
+        switch(true) {
+            case !id : throw new Error("Message Id is required to make a delete request");
+        }
+
+        const message = await ChatModel.findByIdAndDelete({_id: id});
+        if(!message) {
+            res.status(201).send({
+                success: false,
+                message: "Either the message doesn't Exist Or Has Already Been Deleted" 
+            })
+        } else {
+            res.status(200).send({
+                success: true,
+                message: "Message Deleted SuccessFully",
+            });
+        }
+        
+
+      } catch (error) {
+           res.status(400).send({
+            success: false,
+            message: "Something Went Wrong",
+            error: error.message
+           })
+      }
 }
