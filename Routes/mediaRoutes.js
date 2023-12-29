@@ -1,32 +1,25 @@
 import express from 'express';
 import ExpressFormidable from 'express-formidable';
-import { uploadProfilePicture } from '../Controllers/mediaController.js';
-// import multer from 'multer';
-// import formidable from 'express-formidable';
+import { deleteProfilePhoto, sendPhoto, uploadProfilePicture } from '../Controllers/mediaController.js';
+import multer from 'multer';
 
 
 const router = express.Router();
 
 router.use(ExpressFormidable());
+router.use(express.urlencoded({
+    extended: true
+}));
 
-// const storage = multer.memoryStorage();
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
-// const fileFilter = (req, file, cb) => {
-//     if(file.mimetype.startsWith('image')){
-//         cb(null, true)
-//     } else {
-//         cb('invalid image file', false);
-//     }
-// };
-
-// const uploads = multer({
-//     dest: storage,
-//     storage: storage,
-//     fileFilter
-// });
-//For User's Profile Pic
 
 router.post('/upload/:id', ExpressFormidable() , uploadProfilePicture);
+
+router.delete('/delete-photo/:id', deleteProfilePhoto);
+
+router.post('/send-photo/:id', upload.single('photo'), sendPhoto);
 
 
 

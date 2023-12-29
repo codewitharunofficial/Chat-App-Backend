@@ -10,6 +10,7 @@ import { Server } from "socket.io";
 // import formidableMiddleware from 'express-formidable';
 import ConversationModel from "./Models/ConversationModel.js";
 import ChatModel from "./Models/ChatModel.js";
+import userModel from "./Models/userModel.js";
 
 dotenv.config();
 
@@ -26,7 +27,15 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 io.on("connection", (socket) => {
-  console.log("User Connected" + socket.id);
+  socket.on('connected', async (data)=> {
+    try {
+      const isOnline = await userModel.findByIdAndUpdate({_id: data}, {Is_Online: true}, {new: true});
+
+      console.log(`${isOnline.name} is ${isOnline.Is_Online}`);
+    } catch (error) {
+      console.log(error);
+    }
+  })
 
   socket.on("send-message", async (data) => {
     console.log("Recieved a message in server side", data);

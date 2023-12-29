@@ -40,11 +40,14 @@ export const createConvo = async (req, res) => {
             res.status(201).send({
                 success: false,
                 message: "No user1 Found"
-            })
+            });
+
+
         } else {
-            const Convo = await ConversationModel.findOne({senderId: sender, receiverId: receiver});
+            const Convo = await ConversationModel.findOne({$or:[{senderId: sender, receiverId: receiver}, {senderId: receiver, receiverId: sender}]});
 
             const user2 = await userModel.findOne({_id: sender});
+            
             if(!user2) {
                 res.status(201).send({
                     success: false,

@@ -1,4 +1,4 @@
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 
 const MessageSchema = new mongoose.Schema({
     sender: {
@@ -16,7 +16,8 @@ const MessageSchema = new mongoose.Schema({
     message: {
       type: String,
       required: true
-    }
+    },
+    attachmnets: {}
 }, {timestamps: true});
 
 export default mongoose.model('Message', MessageSchema);
