@@ -17,7 +17,7 @@ router.post('/fetch-messages', getAllMessages);
 
 router.delete('/delete-message/:id', deleteMessage);
 
-router.delete('/delete-convo/:id', deleteConversation);
+router.post('/delete-convo/:id', deleteConversation);
 
 
 

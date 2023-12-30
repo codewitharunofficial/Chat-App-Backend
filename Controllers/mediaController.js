@@ -18,21 +18,20 @@ export const uploadProfilePicture = async (req, res) => {
 
     const user = await userModel.findByIdAndUpdate(req.params.id, {
       profilePhoto: result,
-    });
+    }, {new: true});
 
     await user.save();
 
     const updatedPhotoIfSender = await ConversationModel.updateMany(
       { senderId: req.params.id },
-      { sender: { profilePhoto: result } }
+      { sender: user}, {new: true}
     );
 
     const updatePhotoIfReciever = await ConversationModel.updateMany(
       { receiverId: req.params.id },
-      { receiver: { profilePhoto: result } },
+      { receiver: user},
       { new: true }
     );
-
     res.status(200).send({
       success: true,
       message: "Photo Uploaded Successfully",

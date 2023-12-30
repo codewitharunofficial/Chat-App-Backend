@@ -30,15 +30,15 @@ io.on("connection", (socket) => {
   socket.on('connected', async (data)=> {
     try {
       const isOnline = await userModel.findByIdAndUpdate({_id: data}, {Is_Online: true}, {new: true});
-
-      console.log(`${isOnline.name} is ${isOnline.Is_Online}`);
+      console.log(`${isOnline.name} is Online`);
+      socket.emit('online-status', {isOnline});
     } catch (error) {
-      console.log(error);
+      console.log(error.message);
     }
   })
 
   socket.on("send-message", async (data) => {
-    console.log("Recieved a message in server side", data);
+    // console.log("Recieved a message in server side", data);
     const newMessage = new ChatModel({
       sender: data.sender,
       reciever: data.reciever,
