@@ -14,10 +14,10 @@ const MessageSchema = new mongoose.Schema({
       ref: 'User'
     },
     message: {
-      type: String,
+      type: {},
       required: true
     },
-    attachmnets: {}
+    
 }, {timestamps: true});
 
 export default mongoose.model('Message', MessageSchema);

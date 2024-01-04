@@ -14,7 +14,7 @@ export const sendMessage = async (req, res) => {
         throw new Error("Receipent Is Required");
     }
 
-    const coversation = new ChatModel({ ...req.fields });
+    const coversation = new ChatModel({sender: sender, reciever: reciever, message: {message: message}});
     await coversation.save();
 
     res.status(200).send({

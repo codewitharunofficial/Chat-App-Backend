@@ -42,7 +42,7 @@ io.on("connection", (socket) => {
     const newMessage = new ChatModel({
       sender: data.sender,
       reciever: data.reciever,
-      message: data.message,
+      message: data,
     });
     await newMessage.save();
     const messages = await ChatModel.find({

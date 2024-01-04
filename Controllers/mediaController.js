@@ -2,6 +2,8 @@ import userModel from "../Models/userModel.js";
 import cloudinary from "../Helpers/cloudinary.js";
 import ConversationModel from "../Models/ConversationModel.js";
 import ChatAttachmentModel from '../Models/ChatAttachmentsModel.js';
+import path from "path";
+import ChatModel from "../Models/ChatModel.js";
 export const uploadProfilePicture = async (req, res) => {
   try {
     const result = await cloudinary.uploader.upload(
@@ -108,3 +110,39 @@ export const sendPhoto = async (req, res) => {
     })
   }
 };
+
+export const sendVoiceMessage = async (req, res) => {
+  console.log(req.fields, req.files);
+  try {
+    const {sender, receiver} = req.fields;
+  const {audio} = req.files;
+
+  switch(true) {
+    case !sender: throw new Error("Sender Is  required");
+    case !receiver: throw new Error("Receiver Is  required");
+    case !audio: throw new Error("No Audio Found");
+  }
+
+  const result = await cloudinary.uploader.upload(audio.path, {
+    public_id: `${sender}_voice`,
+    resource_type: 'auto'
+  })
+
+  const voice = new ChatAttachmentModel({senderId: sender, recieverId: receiver, audio: result}).save();
+ 
+  const voiceMessage = new ChatModel({sender: sender, reciever: receiver, message: result}).save();
+
+  res.status(200).send({
+    success: true,
+    message: "Voice Message Sent Successfully",
+    voiceMessage
+  });
+  } catch (error) {
+    console.log(error)
+    res.status(400).send({
+      success: false,
+      message: "Something Went Wrong",
+      error: error.message
+    })
+  }
+}

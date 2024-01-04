@@ -16,6 +16,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "expo": "^49.0.21",
+    "expo-file-system": "^15.6.0",
+    "expo-media-library": "^15.6.0",
     "expo-notifications": "~0.20.1",
     "express": "^4.18.2",
     "express-formidable": "^1.2.0",
