@@ -4,7 +4,7 @@ import userModel from "../Models/userModel.js";
 
 export const sendMessage = async (req, res) => {
   try {
-    const { sender, reciever, message } = req.fields;
+    const { sender, reciever, message } = req.body;
     switch (true) {
       case !sender:
         throw new Error("Sender Is Required");
@@ -96,6 +96,7 @@ export const getAllChats = async (req, res) => {
     const chats = await ConversationModel.find({
       $or: [{ senderId: id }, { receiverId: id }],
     }).sort({ updatedAt: -1 });
+
 
     if (!chats) {
       res.status(401).send({
@@ -228,3 +229,26 @@ export const deleteMessage = async (req, res) => {
     });
   }
 };
+
+export const setMessagesAsRead = async (req, res) => {
+  console.log(req.params);
+  try {
+    const {id} = req.params;
+    const {lastMessage} = req.body;
+    switch(true) {
+      case !id: throw new Error("No Status Updated Found from Client");
+    }
+
+    const chat = await ConversationModel.findByIdAndUpdate({_id: id}, {read: true, $set: {chat: {message: lastMessage}}}, {new: true});
+    res.status(200).send({
+      success: true,
+      message: "Message Marked Read"
+    })
+  } catch (error) {
+    console.log(error);
+    res.status(400).send({
+      success: false,
+      message: 'Something Went Wrong'
+    })
+  }
+}

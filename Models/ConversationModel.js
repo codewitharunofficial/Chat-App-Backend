@@ -22,6 +22,10 @@ const ConversationSchema = new mongoose.Schema(
       role: "reciever",
     },
     chat: [],
+    read: {
+      type: Boolean,
+      default: false
+    }
   },
   { timestamps: true }
 );

@@ -122,7 +122,7 @@ export const sendPhoto = async (req, res) => {
 };
 
 export const sendVoiceMessage = async (req, res) => {
-  console.log(req.fields, req.files);
+  // console.log(req.fields, req.files);
   try {
     const { sender, receiver } = req.fields;
     const { audio } = req.files;
@@ -151,11 +151,21 @@ export const sendVoiceMessage = async (req, res) => {
       sender: sender,
       reciever: receiver,
       message: result,
-    }).save();
-    const chat = await ConversationModel.findOneAndUpdate({$or:[{senderId: sender, receiverId: receiver}, {senderId: receiver, receiverId: sender}]}, {chat: voiceMessage}, {new: true}).sort({
-      createdAt: -1,
     });
-    await chat.save();
+
+    await voiceMessage.save();
+
+    if(voiceMessage) {
+
+      const messages = await ChatModel.find({
+        $or: [
+          { sender: sender, reciever: receiver },
+          { sender: receiver, reciever: sender },
+        ],
+      }).sort({ createdAt: -1 });
+
+      const chat = await ConversationModel.findOneAndUpdate({$or:[{senderId: sender, receiverId: receiver}, {senderId: receiver, receiverId: sender}]}, {chat: messages[0]}, {new: true});
+    }
 
     res.status(200).send({
       success: true,

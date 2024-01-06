@@ -1,5 +1,5 @@
 import express from 'express';
-import { createConvo, deleteConversation, deleteMessage, getAllChats, getAllMessages } from '../Controllers/ChatController.js';
+import { createConvo, deleteConversation, deleteMessage, getAllChats, getAllMessages, sendMessage, setMessagesAsRead } from '../Controllers/ChatController.js';
 // import { requireSignIn } from '../MiddleWares/IsActive.js';
 
 
@@ -8,6 +8,8 @@ const router = express.Router();
 
 
 //Post New Messange Or Send New Message
+
+router.post('/send-message', sendMessage);
 
 router.post('/create-conversation', createConvo);
 
@@ -18,6 +20,8 @@ router.post('/fetch-messages', getAllMessages);
 router.delete('/delete-message/:id', deleteMessage);
 
 router.post('/delete-convo/:id', deleteConversation);
+
+router.post('/read-message/:id', setMessagesAsRead);
 
 
 

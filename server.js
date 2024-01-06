@@ -11,6 +11,7 @@ import { Server } from "socket.io";
 import ConversationModel from "./Models/ConversationModel.js";
 import ChatModel from "./Models/ChatModel.js";
 import userModel from "./Models/userModel.js";
+import UnreadMessageModel from "./Models/UnreadMessageModel.js";
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ io.on("connection", (socket) => {
       reciever: data.reciever,
       message: data,
     });
+    
     await newMessage.save();
     const messages = await ChatModel.find({
       $or: [
@@ -51,15 +53,18 @@ io.on("connection", (socket) => {
         { sender: data.reciever, reciever: data.sender },
       ],
     }).sort({ createdAt: -1 });
-    
-    const chat = await ConversationModel.findByIdAndUpdate(
-      { _id: data.convoId },
-      { chat: newMessage },
-      { new: true }
-    ).sort({ createdAt: -1 });
-    await chat.save();
 
-    io.emit("recieved-message", { newMessage, messages, });
+    const sender = await userModel.findById({_id: data.sender});
+    const reciever = await userModel.findById({_id: data.reciever});
+
+    
+    const chat = await ConversationModel.updateOne(
+      { _id: data.convoId },
+      {$push: {chat: newMessage}, $set: {read: false, senderId: data.sender, receiverId: data.reciever, sender: sender, receiver: reciever}},
+      { new: true }
+    ).sort({ updatedAt: -1 });
+
+    io.emit("recieved-message", { newMessage, messages });
   });
 
   io.on("disconnect", (socket) => {
