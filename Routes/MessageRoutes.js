@@ -1,5 +1,5 @@
 import express from 'express';
-import { createConvo, deleteConversation, deleteMessage, getAllChats, getAllMessages, sendMessage, setMessagesAsRead } from '../Controllers/ChatController.js';
+import { createConvo, deleteConversation, deleteMessage, getAllChats, getAllMessages, markMessageAsRead, sendMessage, setMessagesAsRead } from '../Controllers/ChatController.js';
 // import { requireSignIn } from '../MiddleWares/IsActive.js';
 
 
@@ -22,6 +22,8 @@ router.delete('/delete-message/:id', deleteMessage);
 router.post('/delete-convo/:id', deleteConversation);
 
 router.post('/read-message/:id', setMessagesAsRead);
+
+router.get('/isRead/:id', markMessageAsRead);
 
 
 

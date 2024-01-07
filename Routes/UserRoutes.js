@@ -28,6 +28,10 @@ router.get('/search-user/:keyword', searchUser);
 
 router.get('/get-photo/:id', getUserPhoto);
 
+router.get('/user-auth', requireSignIn, (req, res) => {
+    res.status(200).send({ok: true});
+})
+
 router.put('/update-user/:id', updateUser);
 
 router.delete('/delete-account/:id', deleteUser);

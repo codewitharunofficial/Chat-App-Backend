@@ -239,7 +239,7 @@ export const setMessagesAsRead = async (req, res) => {
       case !id: throw new Error("No Status Updated Found from Client");
     }
 
-    const chat = await ConversationModel.findByIdAndUpdate({_id: id}, {read: true, $set: {chat: {message: lastMessage}}}, {new: true});
+    const chat = await ConversationModel.findByIdAndUpdate({_id: id}, {read: true, $set: {chat: {...lastMessage}}}, {new: true});
     res.status(200).send({
       success: true,
       message: "Message Marked Read"
@@ -249,6 +249,28 @@ export const setMessagesAsRead = async (req, res) => {
     res.status(400).send({
       success: false,
       message: 'Something Went Wrong'
+    })
+  }
+}
+
+export const markMessageAsRead = async (req, res) => {
+  console.log(req.params);
+  try {
+    const {id} = req.params;
+    switch(true) {
+      case !id: throw new Error('Id  is required')
+    }
+
+    const isRead = await ConversationModel.findById({_id: id});
+    res.status(200).send({
+      success: true,
+      isRead: isRead.read
+    })
+
+  } catch (error) {
+    res.status(400).send({
+      success: false,
+      error: error.message
     })
   }
 }
