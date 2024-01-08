@@ -34,6 +34,8 @@ io.on("connection", (socket) => {
       console.log(`${isOnline.name} is Online`);
       socket.emit('online-status', {isOnline});
 
+      const updateSender = await ConversationModel.updateMany({senderId: data}, {sender: isOnline}, {new: true});
+      const updateReceiver = await ConversationModel.updateMany({receiverId: data}, {receiver: isOnline}, {new: true});
       socket.on("disconnect", async (socket) => {
       const isOffline = await userModel.findByIdAndUpdate({_id: data}, {Is_Online: false}, {new: true});
         console.log(`${isOffline.name} is Offline`);
