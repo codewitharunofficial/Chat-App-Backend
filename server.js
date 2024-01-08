@@ -30,15 +30,19 @@ const io = new Server(server);
 io.on("connection", (socket) => {
   socket.on('connected', async (data)=> {
     try {
-      const isOnline = await userModel.findByIdAndUpdate({_id: data}, {Is_Online: true}, {new: true});
+      const isOnline = await userModel.findByIdAndUpdate({_id: data}, {Is_Online: "true"}, {new: true});
       console.log(`${isOnline.name} is Online`);
       socket.emit('online-status', {isOnline});
 
       const updateSender = await ConversationModel.updateMany({senderId: data}, {sender: isOnline}, {new: true});
       const updateReceiver = await ConversationModel.updateMany({receiverId: data}, {receiver: isOnline}, {new: true});
-      socket.on("disconnect", async (socket) => {
-      const isOffline = await userModel.findByIdAndUpdate({_id: data}, {Is_Online: false}, {new: true});
+      // console.log(updateSender, updateReceiver);
+      socket.on("disconnect", async () => {
+      const isOffline = await userModel.findByIdAndUpdate({_id: data}, {Is_Online: "false"}, {new: true});
         console.log(`${isOffline.name} is Offline`);
+        const updateSender = await ConversationModel.updateMany({senderId: data}, {sender: isOnline}, {new: true});
+      const updateReceiver = await ConversationModel.updateMany({receiverId: data}, {receiver: isOnline}, {new: true});
+      console.log(updateReceiver, updateSender);
       });
     } catch (error) {
       console.log(error.message);
@@ -75,7 +79,7 @@ io.on("connection", (socket) => {
       { _id: data.convoId },
       {$push: {chat: newMessage}, $set: {read: false, senderId: data.sender, receiverId: data.reciever, sender: sender, receiver: reciever}},
       { new: true }
-    ).sort({ updatedAt: -1 });
+    ).sort({ createdAt: -1 });
 
     io.emit("recieved-message", { newMessage, messages });
   });
