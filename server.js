@@ -33,17 +33,29 @@ io.on("connection", (socket) => {
       const isOnline = await userModel.findByIdAndUpdate({_id: data}, {Is_Online: true}, {new: true});
       console.log(`${isOnline.name} is Online`);
       socket.emit('online-status', {isOnline});
+
+      socket.on("disconnect", async (socket) => {
+      const isOffline = await userModel.findByIdAndUpdate({_id: data}, {Is_Online: false}, {new: true});
+        console.log(`${isOffline.name} is Offline`);
+      });
     } catch (error) {
       console.log(error.message);
     }
+    
   })
 
   socket.on("send-message", async (data) => {
     // console.log("Recieved a message in server side", data);
+
+    const sender = await userModel.findById({_id: data.sender});
+    const reciever = await userModel.findById({_id: data.reciever});
+
     const newMessage = new ChatModel({
       sender: data.sender,
       reciever: data.reciever,
       message: data,
+      from: sender,
+      to: reciever
     });
     
     await newMessage.save();
@@ -54,8 +66,7 @@ io.on("connection", (socket) => {
       ],
     }).sort({ createdAt: -1 });
 
-    const sender = await userModel.findById({_id: data.sender});
-    const reciever = await userModel.findById({_id: data.reciever});
+    
 
     
     const chat = await ConversationModel.updateOne(
@@ -65,10 +76,6 @@ io.on("connection", (socket) => {
     ).sort({ updatedAt: -1 });
 
     io.emit("recieved-message", { newMessage, messages });
-  });
-
-  io.on("disconnect", (socket) => {
-    console.log("User Disconnected");
   });
 });
 

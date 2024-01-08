@@ -14,7 +14,11 @@ export const sendMessage = async (req, res) => {
         throw new Error("Receipent Is Required");
     }
 
-    const coversation = new ChatModel({sender: sender, reciever: reciever, message: {message: message}});
+    const coversation = new ChatModel({
+      sender: sender,
+      reciever: reciever,
+      message: { message: message },
+    });
     await coversation.save();
 
     res.status(200).send({
@@ -96,7 +100,6 @@ export const getAllChats = async (req, res) => {
     const chats = await ConversationModel.find({
       $or: [{ senderId: id }, { receiverId: id }],
     }).sort({ updatedAt: -1 });
-
 
     if (!chats) {
       res.status(401).send({
@@ -233,44 +236,57 @@ export const deleteMessage = async (req, res) => {
 export const setMessagesAsRead = async (req, res) => {
   console.log(req.params);
   try {
-    const {id} = req.params;
-    const {lastMessage} = req.body;
-    switch(true) {
-      case !id: throw new Error("No Status Updated Found from Client");
+    const { id } = req.params;
+    const { lastMessage } = req.body;
+    switch (true) {
+      case !id:
+        throw new Error("No Status Updated Found from Client");
     }
 
-    const chat = await ConversationModel.findByIdAndUpdate({_id: id}, {read: true, $set: {chat: {...lastMessage}}}, {new: true});
-    res.status(200).send({
-      success: true,
-      message: "Message Marked Read"
-    })
+    const chat = await ConversationModel.findById({ _id: id });
+      if (chat.read === true) {
+       res.status(201).send({
+          success: false,
+          message: "Already seen"
+        })
+      } else {
+        await chat.updateOne(
+          { read: true, $set: { chat: { ...lastMessage } } },
+          { new: true }
+        );
+        res.status(200).send({
+          success: true,
+          message: "Message Marked Read",
+        });
+      }
+    
   } catch (error) {
     console.log(error);
     res.status(400).send({
       success: false,
-      message: 'Something Went Wrong'
-    })
+      message: "Something Went Wrong",
+    });
   }
-}
+};
 
 export const markMessageAsRead = async (req, res) => {
   console.log(req.params);
   try {
-    const {id} = req.params;
-    switch(true) {
-      case !id: throw new Error('Id  is required')
+    const { id } = req.params;
+    switch (true) {
+      case !id:
+        throw new Error("Id  is required");
     }
 
-    const isRead = await ConversationModel.findById({_id: id});
+    const isRead = await ConversationModel.findById({ _id: id });
     res.status(200).send({
       success: true,
-      isRead: isRead.read
-    })
-
+      isRead: isRead.read,
+    });
   } catch (error) {
     res.status(400).send({
       success: false,
-      error: error.message
-    })
+      error: error.message,
+    });
   }
-}
+};
