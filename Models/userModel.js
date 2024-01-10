@@ -19,17 +19,18 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true
      },
-     answer: {
-      type: String,
-      required: true
-     },
      profilePhoto: {
       type: {}
      },
      Is_Online: {
       type: String,
-      default: 'false'
+      default: 'false',
      },
+     lastseen: Date,
+     emailStatus: {
+      type: String,
+      default: "Pending"
+     }
 
 }, {timestamps: true});
 

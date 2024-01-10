@@ -1,5 +1,5 @@
 import express from 'express';
-import { deleteUser, fetchAllUsers, forgotPassword, getUser, getUserPhoto, loginUser, newUser, searchUser, updateUser } from '../Controllers/UserController.js';
+import { deleteUser, fetchAllUsers, forgotPassword, generateNewOTP, getUser, getUserPhoto, loginUser, newUser, requestOtpForResetPassword, searchUser, updateUser, verifyOTP } from '../Controllers/UserController.js';
 import ExpressFormidable from 'express-formidable';
 import { requireSignIn } from '../MiddleWares/IsActive.js';
 import { ForgotPasswordValidator, signUpValidator } from '../Helpers/validators.js';
@@ -15,6 +15,16 @@ const router = express.Router();
 //Post New Messange Or Send New Message
 
 router.post('/create-user', signUpValidator, newUser);
+
+//verify email otp
+
+router.post('/verify-otp', verifyOTP);
+
+//generate new otp
+router.post('/request-otp', generateNewOTP);
+
+//otp via sms
+
 
 //Login User
 
@@ -35,6 +45,8 @@ router.get('/user-auth', requireSignIn, (req, res) => {
 router.put('/update-user/:id', updateUser);
 
 router.delete('/delete-account/:id', deleteUser);
+
+router.put('/reset-password-request', requestOtpForResetPassword);
 
 router.put('/reset-password', ForgotPasswordValidator, forgotPassword);
 

@@ -1,11 +1,117 @@
-import { comparePassword, hashPassword } from "../Helpers/authHelper.js";
+import {
+  compareOTP,
+  comparePassword,
+  hashOTP,
+  hashPassword,
+} from "../Helpers/authHelper.js";
 import userModel from "../Models/userModel.js";
-import ConversationModel from '../Models/ConversationModel.js';
+import ConversationModel from "../Models/ConversationModel.js";
 import JWT from "jsonwebtoken";
-import {validationResult } from "express-validator";
+import { validationResult } from "express-validator";
+import nodemailer from "nodemailer";
+import OTPVerificationModel from "../Models/OTPVerificationModel.js";
+
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "chatrrislive@gmail.com",
+    pass: "cobojbqyrlloofec",
+  },
+});
+
+export const verifyOTP = async (req, res) => {
+  console.log(req.body);
+  try {
+    const { otp, email } = req.body;
+    if (!otp) {
+      res.send({
+        success: false,
+        message: "Please Provide a valid OTP",
+      });
+      if (!email) {
+        res.send({
+          success: false,
+          message: "Please Provide a valid Email",
+        });
+      }
+    } else {
+      const OTP = await OTPVerificationModel.findOne({ email });
+      if (!OTP) {
+        res.status(400).send({
+          success: false,
+          message: "Invalid Email",
+        });
+      }
+
+      const verify = await compareOTP(otp, OTP.OTP);
+      if (!verify) {
+        res.status(400).send({
+          success: false,
+          message: "Incorrect OTP",
+        });
+      } else {
+        const timeNow = Date.now();
+
+        if (timeNow > OTP.expiresAt) {
+          await OTPVerificationModel.findOneAndDelete({ email });
+          res.status(400).send({
+            success: false,
+            message: "OTP Has Expired, Kindly Request New OTP",
+          });
+        } else {
+          await OTPVerificationModel.findOneAndDelete({ email });
+          const user = await userModel.findOneAndUpdate(
+            { email: email },
+            { emailStatus: "Verified" },
+            { new: true }
+          );
+        }
+        res.status(200).send({
+          success: true,
+          message: "OTP Verification Successfull",
+        });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const generateNewOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const OTP = Math.floor(1000 + Math.random() * 9000).toString();
+
+    const hashedOTP = await hashOTP(OTP);
+
+    const mailOptions = {
+      from: "Chattr",
+      to: email,
+      subject: "Account Verification",
+      text: `New OTP for your Chatrr Account Verification is ${OTP}`,
+    };
+
+    transporter.sendMail(mailOptions, async (error, info) => {
+      if (error) {
+        return console.error(error.message);
+      }
+      console.log("Email sent :", info.response);
+
+      const otpInDb = new OTPVerificationModel({
+        email: email,
+        OTP: hashedOTP,
+      }).save();
+      res.status(200).send({
+        success: true,
+        message: "New OTP Sent Successfully",
+      });
+    });
+  } catch (error) {}
+};
 
 export const newUser = async (req, res) => {
-  const { name, phone, email, password, answer } = req.body;
+  const { name, phone, email, password } = req.body;
 
   try {
     if (!name) {
@@ -16,16 +122,12 @@ export const newUser = async (req, res) => {
     }
     if (!email) {
       res.send({ message: "Email Is Required" });
-       
     }
     if (!password) {
       return res.send({
         message:
           "Password is Required & Should be of atleast 6 characters and Should contain atleast 1 Uppercase, 1 lowercase, 1 special character & 1 number",
       });
-    }
-    if (!answer) {
-      return res.send({ message: "Answer Is Required for Security Purpose" });
     }
 
     const errors = validationResult(req);
@@ -45,24 +147,51 @@ export const newUser = async (req, res) => {
       } else {
         const hanshedPassword = await hashPassword(password);
 
-        const user = new userModel({ ...req.body, password: hanshedPassword });
+        const OTP = Math.floor(1000 + Math.random() * 9000).toString();
 
-        // if(profilePhoto) {
-        //     user.profilePhoto.data = fs.readFileSync(profilePhoto.path);
-        //     user.profilePhoto.contentType = profilePhoto.type;
-        // }
+        const hashedOTP = await hashOTP(OTP);
 
-        const token = JWT.sign({ _id: user._id }, process.env.JWT_SECRET, {
-          expiresIn: "7d",
-        });
+        const mailOptions = {
+          from: "Chattr",
+          to: email,
+          subject: "Account Verification",
+          text: `
+          Welcome ${name},
+          The New World For Chatrrs..!! \n
+          OTP for your Chatrr Account Verification is
+           ${OTP}.
+          The OTP Is Valid For 1 Minute.
+          Please Verify OTP To Become Our Certified
+          Chatrr
+          `,
+        };
 
-        await user.save();
+        transporter.sendMail(mailOptions, async (error, info) => {
+          if (error) {
+            return console.error(error.message);
+          }
+          console.log("Email sent :", info.response);
 
-        res.status(200).send({
-          success: true,
-          message: "Registration Successfull",
-          user,
-          token,
+          const otpInDb = new OTPVerificationModel({
+            email: email,
+            OTP: hashedOTP,
+          }).save();
+
+          const user = new userModel({
+            ...req.body,
+            password: hanshedPassword,
+          });
+          const token = JWT.sign({ _id: user._id }, process.env.JWT_SECRET, {
+            expiresIn: "7d",
+          });
+
+          await user.save();
+          res.status(200).send({
+            success: true,
+            message: `An OTP Has Been Sent To ${email}, Enter The OTP To Verify & Finish Signing Up`,
+            user,
+            token,
+          });
         });
       }
     }
@@ -109,7 +238,11 @@ export const loginUser = async (req, res) => {
       expiresIn: "7d",
     });
 
-    const isOnline = await userModel.findOneAndUpdate({phone}, {Is_Online: true}, {new: true});
+    const isOnline = await userModel.findOneAndUpdate(
+      { phone },
+      { Is_Online: true },
+      { new: true }
+    );
 
     res.status(200).send({
       success: true,
@@ -133,19 +266,73 @@ export const loginUser = async (req, res) => {
   }
 };
 
-export const forgotPassword = async (req, res) => {
+export const requestOtpForResetPassword = async (req, res) => {
   try {
-    const { phone, answer, password } = req.body;
+    const { email } = req.body;
 
-    if (!answer) {
+    if (!email) {
       return res.send({
-        message: "Answer is Required",
+        message: "Email No. is Required",
       });
     }
 
-    if (!phone) {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
       return res.send({
-        message: "Phone No. is Required",
+        error: errors.array(),
+      });
+    } else {
+      const OTP = Math.floor(1000 + Math.random() * 9000).toString();
+
+    const hashedOTP = await hashOTP(OTP);
+
+    const mailOptions = {
+      from: "Chattr",
+      to: email,
+      subject: "Account Verification",
+      text: `OTP for Resetting your Chatrr Account Password is ${OTP}`,
+    };
+
+    transporter.sendMail(mailOptions, async (error, info) => {
+      if (error) {
+        return console.error(error.message);
+      }
+      console.log("Email sent :", info.response);
+
+      const otpInDb = new OTPVerificationModel({
+        email: email,
+        OTP: hashedOTP,
+      }).save();
+      res.status(200).send({
+        success: true,
+        message: "OTP Sent Successfully",
+      });
+    });
+      
+    }
+  } catch (error) {
+    res.status(400).send({
+      success: false,
+        message: "Something went Wrong",
+        error
+    })
+  }
+}
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email, otp, password } = req.body;
+
+    if (!email) {
+      return res.send({
+        message: "OTP No. is Required",
+      });
+    }
+
+    if (!otp) {
+      return res.send({
+        message: "OTP No. is Required",
       });
     }
 
@@ -159,14 +346,12 @@ export const forgotPassword = async (req, res) => {
 
     if (!errors.isEmpty()) {
       return res.send({
-        error: errors.array()
+        error: errors.array(),
       });
     } else {
       const hanshedPassword = await hashPassword(password);
 
-      const user = await userModel.findOne(
-        { phone: phone, answer: answer },
-      );
+      const user = await userModel.findOne({email});
 
       if (!user) {
         res.status(201).send({
@@ -175,18 +360,32 @@ export const forgotPassword = async (req, res) => {
         });
       } else {
         const updatedUser = await userModel.findOneAndUpdate(
-          { phone: phone, answer: answer },
+          {email},
           { password: hanshedPassword },
           { new: true }
-        );
+        ).select("-password");
         await updatedUser.save();
+        const otpIndb = await OTPVerificationModel.findOneAndDelete({email});
+        const mailOptions = {
+          from: "Chattr",
+          to: email,
+          subject: "Account Verification",
+          text: `Hi, Your Password Has Been Changed Successfully.
+          Your Details are ${updatedUser}`,
+        };
+    
+        transporter.sendMail(mailOptions, async (error, info) => {
+          if (error) {
+            return console.error(error.message);
+          }
+          console.log("Email sent :", info.response);
+        });    
 
         res.status(200).send({
           success: true,
           message: "Password Reset Successfully",
           updatedUser,
         });
-        console.log(updatedUser);
       }
     }
   } catch (error) {
@@ -312,8 +511,15 @@ export const updateUser = async (req, res) => {
 
     await user.save();
 
-    const updatedUserIfSender = await ConversationModel.updateMany({senderId: id}, {sender: user});
-    const updateUserIfReciever = await ConversationModel.updateMany({receiverId: id}, {receiver: user}, {new: true});
+    const updatedUserIfSender = await ConversationModel.updateMany(
+      { senderId: id },
+      { sender: user }
+    );
+    const updateUserIfReciever = await ConversationModel.updateMany(
+      { receiverId: id },
+      { receiver: user },
+      { new: true }
+    );
 
     res.status(200).send({
       success: true,
