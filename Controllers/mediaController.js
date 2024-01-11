@@ -84,18 +84,20 @@ export const deleteProfilePhoto = async (req, res) => {
 
 export const sendPhoto = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { photo } = req.files;
+    const { sender, reciever } = req.fields;
+    const {photo} = req.files;
 
     switch (true) {
-      case !id:
-        throw new Error("Id is required");
+      case !sender:
+        throw new Error("Sender is required");
+        case !reciever:
+        throw new Error("Reciever is required");
       case !photo:
         throw new Error("Photo is required");
     }
 
     const result = await cloudinary.uploader.upload(photo.path, {
-      public_id: `${id}_image`,
+      public_id: `${sender}_image`,
     });
 
     switch (true) {
@@ -105,12 +107,15 @@ export const sendPhoto = async (req, res) => {
 
     const attachmentImage = new ChatAttachmentModel({
       image: result,
-      senderId: id,
+      senderId: sender,
     }).save();
+
+    const image = new ChatModel({sender: sender, reciever: reciever, message: result}).save();
+
     res.status(200).send({
       success: true,
       message: "Attachment Sent Successfully",
-      attachmentImage,
+      image,
     });
   } catch (error) {
     res.status(400).send({

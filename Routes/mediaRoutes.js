@@ -19,7 +19,7 @@ router.post('/upload/:id', ExpressFormidable() , uploadProfilePicture);
 
 router.delete('/delete-photo/:id', deleteProfilePhoto);
 
-router.post('/send-photo/:id', upload.single('photo'), sendPhoto);
+router.post('/send-photo', upload.single('photo'), sendPhoto);
 
 router.post('/send-voice', ExpressFormidable(), sendVoiceMessage);
 
