@@ -11,7 +11,6 @@ import { validationResult } from "express-validator";
 import nodemailer from "nodemailer";
 import OTPVerificationModel from "../Models/OTPVerificationModel.js";
 
-
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -285,40 +284,39 @@ export const requestOtpForResetPassword = async (req, res) => {
     } else {
       const OTP = Math.floor(1000 + Math.random() * 9000).toString();
 
-    const hashedOTP = await hashOTP(OTP);
+      const hashedOTP = await hashOTP(OTP);
 
-    const mailOptions = {
-      from: "Chattr",
-      to: email,
-      subject: "Account Verification",
-      text: `OTP for Resetting your Chatrr Account Password is ${OTP}`,
-    };
+      const mailOptions = {
+        from: "Chattr",
+        to: email,
+        subject: "Account Verification",
+        text: `OTP for Resetting your Chatrr Account Password is ${OTP}`,
+      };
 
-    transporter.sendMail(mailOptions, async (error, info) => {
-      if (error) {
-        return console.error(error.message);
-      }
-      console.log("Email sent :", info.response);
+      transporter.sendMail(mailOptions, async (error, info) => {
+        if (error) {
+          return console.error(error.message);
+        }
+        console.log("Email sent :", info.response);
 
-      const otpInDb = new OTPVerificationModel({
-        email: email,
-        OTP: hashedOTP,
-      }).save();
-      res.status(200).send({
-        success: true,
-        message: "OTP Sent Successfully",
+        const otpInDb = new OTPVerificationModel({
+          email: email,
+          OTP: hashedOTP,
+        }).save();
+        res.status(200).send({
+          success: true,
+          message: "OTP Sent Successfully",
+        });
       });
-    });
-      
     }
   } catch (error) {
     res.status(400).send({
       success: false,
-        message: "Something went Wrong",
-        error
-    })
+      message: "Something went Wrong",
+      error,
+    });
   }
-}
+};
 
 export const forgotPassword = async (req, res) => {
   try {
@@ -351,7 +349,7 @@ export const forgotPassword = async (req, res) => {
     } else {
       const hanshedPassword = await hashPassword(password);
 
-      const user = await userModel.findOne({email});
+      const user = await userModel.findOne({ email });
 
       if (!user) {
         res.status(201).send({
@@ -359,13 +357,15 @@ export const forgotPassword = async (req, res) => {
           message: "Phone Or Answer Mismatched, please try again",
         });
       } else {
-        const updatedUser = await userModel.findOneAndUpdate(
-          {email},
-          { password: hanshedPassword },
-          { new: true }
-        ).select("-password");
+        const updatedUser = await userModel
+          .findOneAndUpdate(
+            { email },
+            { password: hanshedPassword },
+            { new: true }
+          )
+          .select("-password");
         await updatedUser.save();
-        const otpIndb = await OTPVerificationModel.findOneAndDelete({email});
+        const otpIndb = await OTPVerificationModel.findOneAndDelete({ email });
         const mailOptions = {
           from: "Chattr",
           to: email,
@@ -373,13 +373,13 @@ export const forgotPassword = async (req, res) => {
           text: `Hi, Your Password Has Been Changed Successfully.
           Your Details are ${updatedUser}`,
         };
-    
+
         transporter.sendMail(mailOptions, async (error, info) => {
           if (error) {
             return console.error(error.message);
           }
           console.log("Email sent :", info.response);
-        });    
+        });
 
         res.status(200).send({
           success: true,
@@ -442,6 +442,7 @@ export const getUser = async (req, res) => {
 };
 
 export const searchUser = async (req, res) => {
+  
   try {
     const { keyword } = req.params;
     const searchedResults = await userModel.find({
@@ -570,6 +571,54 @@ export const deleteUser = async (req, res) => {
     res.status(400).send({
       success: false,
       message: "Something Went Wrong!",
+    });
+  }
+};
+
+export const blockAUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { user } = req.body;
+    if (!user) {
+      return res.status(400).send({
+        success: false,
+        message: "ID of the user to be blocked is required",
+      });
+    }
+    const userToBeBlocked = await userModel.findById({ _id: user });
+    const userToBeUpdated = await userModel.findById({ _id: id });
+    if (!userToBeUpdated) {
+      return res.status(401).send({
+        success: false,
+        message: "No User Found",
+      });
+    } else {
+      if (userToBeUpdated.blocked_users.includes(user)) {
+        return (
+          true,
+          res.status(201).send({
+            success: false,
+            message: "User Is Already Blocked",
+          })
+        );
+      } else {
+        
+          await userModel.findByIdAndUpdate(
+            { _id: id },
+            { $push: { blocked_users: userToBeBlocked._id }}, {new: true}
+          )
+          res.status(200).send({
+            success: true,
+            message: "User Blocked Successfully",
+            userToBeBlocked,
+          });
+      }
+    }
+  } catch (error) {
+    res.status(400).send({
+      success: false,
+      message: "Something went wrong",
+      error,
     });
   }
 };

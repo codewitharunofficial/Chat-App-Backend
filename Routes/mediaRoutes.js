@@ -1,6 +1,6 @@
 import express from 'express';
 import ExpressFormidable from 'express-formidable';
-import { deleteProfilePhoto, sendPhoto, sendVoiceMessage, uploadProfilePicture } from '../Controllers/mediaController.js';
+import { deleteProfilePhoto, getAttachments, sendPhoto, sendVoiceMessage, uploadProfilePicture } from '../Controllers/mediaController.js';
 import multer from 'multer';
 
 
@@ -22,6 +22,8 @@ router.delete('/delete-photo/:id', deleteProfilePhoto);
 router.post('/send-photo', upload.single('photo'), sendPhoto);
 
 router.post('/send-voice', ExpressFormidable(), sendVoiceMessage);
+
+router.post('/get-attachs', ExpressFormidable(), getAttachments);
 
 
 

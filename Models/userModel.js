@@ -30,7 +30,8 @@ const userSchema = new mongoose.Schema({
      emailStatus: {
       type: String,
       default: "Pending"
-     }
+     },
+     blocked_users: [],
 
 }, {timestamps: true});
 

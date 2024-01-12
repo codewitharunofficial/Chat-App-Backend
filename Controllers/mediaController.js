@@ -4,6 +4,7 @@ import ConversationModel from "../Models/ConversationModel.js";
 import ChatAttachmentModel from "../Models/ChatAttachmentsModel.js";
 import path from "path";
 import ChatModel from "../Models/ChatModel.js";
+import ChatAttachmentsModel from "../Models/ChatAttachmentsModel.js";
 export const uploadProfilePicture = async (req, res) => {
   try {
     const result = await cloudinary.uploader.upload(
@@ -85,12 +86,12 @@ export const deleteProfilePhoto = async (req, res) => {
 export const sendPhoto = async (req, res) => {
   try {
     const { sender, reciever } = req.fields;
-    const {photo} = req.files;
+    const { photo } = req.files;
 
     switch (true) {
       case !sender:
         throw new Error("Sender is required");
-        case !reciever:
+      case !reciever:
         throw new Error("Reciever is required");
       case !photo:
         throw new Error("Photo is required");
@@ -110,12 +111,21 @@ export const sendPhoto = async (req, res) => {
       senderId: sender,
     }).save();
 
-    const image = new ChatModel({sender: sender, reciever: reciever, message: result}).save();
+    const messages = new ChatModel({
+      sender: sender,
+      reciever: reciever,
+      message: result,
+    }).save();
+
+    const updateToConvo = await ConversationModel.findOneAndUpdate({$or: [
+      { senderId: sender, recieverId: reciever },
+      { senderId: reciever, recieverId: sender },
+    ]}, {chat: messages}, {new: true});
 
     res.status(200).send({
       success: true,
       message: "Attachment Sent Successfully",
-      image,
+      messages,
     });
   } catch (error) {
     res.status(400).send({
@@ -160,8 +170,7 @@ export const sendVoiceMessage = async (req, res) => {
 
     await voiceMessage.save();
 
-    if(voiceMessage) {
-
+    if (voiceMessage) {
       const messages = await ChatModel.find({
         $or: [
           { sender: sender, reciever: receiver },
@@ -169,7 +178,16 @@ export const sendVoiceMessage = async (req, res) => {
         ],
       }).sort({ createdAt: -1 });
 
-      const chat = await ConversationModel.findOneAndUpdate({$or:[{senderId: sender, receiverId: receiver}, {senderId: receiver, receiverId: sender}]}, {chat: messages[0]}, {new: true});
+      const chat = await ConversationModel.findOneAndUpdate(
+        {
+          $or: [
+            { senderId: sender, receiverId: receiver },
+            { senderId: receiver, receiverId: sender },
+          ],
+        },
+        { chat: messages[0] },
+        { new: true }
+      );
     }
 
     res.status(200).send({
@@ -183,6 +201,49 @@ export const sendVoiceMessage = async (req, res) => {
       success: false,
       message: "Something Went Wrong",
       error: error.message,
+    });
+  }
+};
+
+//fetch all attachments send to a perticular chat
+
+export const getAttachments = async (req, res) => {
+  console.log(req.fields);
+  try {
+    const { sender, reciever } = req.fields;
+
+    switch (true) {
+      case !sender:
+        throw new Error("Sender Is Required");
+      case !reciever:
+        throw new Error("Reciever Is Required");
+    }
+
+    const attachments = await ChatAttachmentsModel.find({
+      $or: [
+        { senderId: sender, recieverId: reciever },
+        { senderId: reciever, recieverId: sender },
+      ],
+    });
+
+    if (!attachments) {
+      res.status(201).send({
+        success: false,
+        message: "No Attachments Found",
+      });
+    } else {
+      res.status(200).send({
+        success: true,
+        message: "Attchments fechted successfully",
+        attachments,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(200).send({
+      success: false,
+      message: "Something Went Wrong",
+      error,
     });
   }
 };

@@ -1,5 +1,5 @@
 import express from 'express';
-import { deleteUser, fetchAllUsers, forgotPassword, generateNewOTP, getUser, getUserPhoto, loginUser, newUser, requestOtpForResetPassword, searchUser, updateUser, verifyOTP } from '../Controllers/UserController.js';
+import { blockAUser, deleteUser, fetchAllUsers, forgotPassword, generateNewOTP, getUser, getUserPhoto, loginUser, newUser, requestOtpForResetPassword, searchUser, updateUser, verifyOTP } from '../Controllers/UserController.js';
 import ExpressFormidable from 'express-formidable';
 import { requireSignIn } from '../MiddleWares/IsActive.js';
 import { ForgotPasswordValidator, signUpValidator } from '../Helpers/validators.js';
@@ -49,6 +49,8 @@ router.delete('/delete-account/:id', deleteUser);
 router.put('/reset-password-request', requestOtpForResetPassword);
 
 router.put('/reset-password', ForgotPasswordValidator, forgotPassword);
+
+router.post('/block-user/:id', blockAUser);
 
 
 
