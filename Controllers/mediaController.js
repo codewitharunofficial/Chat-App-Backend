@@ -109,6 +109,7 @@ export const sendPhoto = async (req, res) => {
     const attachmentImage = new ChatAttachmentModel({
       image: result,
       senderId: sender,
+      recieverId: reciever
     }).save();
 
     const messages = new ChatModel({

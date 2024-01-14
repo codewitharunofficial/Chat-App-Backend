@@ -11,7 +11,6 @@ import { Server } from "socket.io";
 import ConversationModel from "./Models/ConversationModel.js";
 import ChatModel from "./Models/ChatModel.js";
 import userModel from "./Models/userModel.js";
-import UnreadMessageModel from "./Models/UnreadMessageModel.js";
 
 dotenv.config();
 
@@ -78,15 +77,17 @@ io.on("connection", (socket) => {
     const isOffline = await userModel.findByIdAndUpdate(
       { _id: data },
       { Is_Online: "false", lastseen: Date.now() },
-      { new: true }
+      {new: true}
     );
     const updateSender = await ConversationModel.updateMany(
       { senderId: data },
       { sender: isOffline },
+      {new: true}
     );
     const updateReceiver = await ConversationModel.updateMany(
       { receiverId: data },
       { receiver: isOffline },
+      {new: true}
     );
   });
 

@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 
 const ChatAttachmentSchema = new mongoose.Schema({
-    image: [],
-    video: [],
+    image: {},
+    video: {},
     audio: {},
-    others: [],
+    others: {},
     senderId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'

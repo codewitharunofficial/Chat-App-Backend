@@ -253,6 +253,7 @@ export const loginUser = async (req, res) => {
         email: user.email,
         photo: user.profilePhoto,
         isOnline: isOnline.Is_Online,
+        blocked_users: user?.blocked_users
       },
       token,
     });
@@ -442,7 +443,7 @@ export const getUser = async (req, res) => {
 };
 
 export const searchUser = async (req, res) => {
-  
+
   try {
     const { keyword } = req.params;
     const searchedResults = await userModel.find({
@@ -603,14 +604,24 @@ export const blockAUser = async (req, res) => {
         );
       } else {
         
-          await userModel.findByIdAndUpdate(
+         const updatedUser =  await userModel.findByIdAndUpdate(
             { _id: id },
             { $push: { blocked_users: userToBeBlocked._id }}, {new: true}
-          )
+          );
+          const updatedUserIfSender = await ConversationModel.updateMany(
+            { senderId: id },
+            { sender: updatedUser },
+            {new: true}
+          );
+          const updateUserIfReciever = await ConversationModel.updateMany(
+            { receiverId: id },
+            { receiver: updatedUser },
+            { new: true }
+          );
           res.status(200).send({
             success: true,
             message: "User Blocked Successfully",
-            userToBeBlocked,
+            updatedUser,
           });
       }
     }
@@ -622,3 +633,88 @@ export const blockAUser = async (req, res) => {
     });
   }
 };
+
+
+//unblocking a user
+
+export const unblockUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { user } = req.body;
+    if (!user) {
+      return res.status(400).send({
+        success: false,
+        message: "ID of the user to be UnBlocked is required",
+      });
+    }
+    const userToBeUnBlocked = await userModel.findById({ _id: user });
+    const userToBeUpdated = await userModel.findById({ _id: id });
+    if (!userToBeUpdated) {
+      return res.status(401).send({
+        success: false,
+        message: "No User Found",
+      });
+    } else {
+      if (!userToBeUpdated.blocked_users.includes(user)) {
+        return (
+          true,
+          res.status(201).send({
+            success: false,
+            message: "User Is Not In the Blocklist",
+          })
+        );
+      } else {
+        
+         const updatedUser =  await userModel.findByIdAndUpdate(
+            { _id: id },
+            { $pull: { blocked_users: userToBeUnBlocked._id }}, {new: true}
+          );
+          const updatedUserIfSender = await ConversationModel.updateMany(
+            { senderId: id },
+            { sender: updatedUser },
+            {new: true}
+          );
+          const updateUserIfReciever = await ConversationModel.updateMany(
+            { receiverId: id },
+            { receiver: updatedUser },
+            { new: true }
+          );
+          res.status(200).send({
+            success: true,
+            message: "UnBlocked User Successfully",
+            updatedUser,
+          });
+      }
+    }
+  } catch (error) {
+    res.status(400).send({
+      success: false,
+      message: "Something went wrong",
+      error,
+    });
+  }
+}
+
+export const findUsers = async (req, res) => {
+  try {
+    // console.log(req.body);
+    const {id} = req.body;
+    console.log(id);
+  if(!id) {
+    return res.status(201).send({
+      success: false,
+      message: "Id is required"
+    })
+  } else {
+    for(let i=0; i<= id.length; i++) {
+      console.log(i);
+    }
+  }
+  } catch (error) {
+    res.status(400).send({
+      success: false,
+      message: "Something went wrong",
+      error: error.message
+    })
+  }
+}
