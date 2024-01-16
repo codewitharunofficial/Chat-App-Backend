@@ -12,7 +12,7 @@ import nodemailer from "nodemailer";
 import OTPVerificationModel from "../Models/OTPVerificationModel.js";
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
   auth: {
     user: "chatrrislive@gmail.com",
     pass: "cobojbqyrlloofec",
@@ -37,7 +37,7 @@ export const verifyOTP = async (req, res) => {
     } else {
       const OTP = await OTPVerificationModel.findOne({ email });
       if (!OTP) {
-        res.status(400).send({
+        return res.status(400).send({
           success: false,
           message: "Invalid Email",
         });
@@ -45,7 +45,7 @@ export const verifyOTP = async (req, res) => {
 
       const verify = await compareOTP(otp, OTP.OTP);
       if (!verify) {
-        res.status(400).send({
+        return res.status(400).send({
           success: false,
           message: "Incorrect OTP",
         });
@@ -54,7 +54,7 @@ export const verifyOTP = async (req, res) => {
 
         if (timeNow > OTP.expiresAt) {
           await OTPVerificationModel.findOneAndDelete({ email });
-          res.status(400).send({
+          return res.status(400).send({
             success: false,
             message: "OTP Has Expired, Kindly Request New OTP",
           });
@@ -74,6 +74,10 @@ export const verifyOTP = async (req, res) => {
     }
   } catch (error) {
     console.log(error);
+    res.status(400).send({
+      success: false,
+      message: "Something Went Wrong"
+    })
   }
 };
 
@@ -85,7 +89,7 @@ export const generateNewOTP = async (req, res) => {
     const hashedOTP = await hashOTP(OTP);
 
     const mailOptions = {
-      from: "Chattr",
+      from: "chatrrislive@gmail.com",
       to: email,
       subject: "Account Verification",
       text: `New OTP for your Chatrr Account Verification is ${OTP}`,
@@ -151,7 +155,7 @@ export const newUser = async (req, res) => {
         const hashedOTP = await hashOTP(OTP);
 
         const mailOptions = {
-          from: "Chattr",
+          from: "chatrrislive@gmail.com",
           to: email,
           subject: "Account Verification",
           text: `
@@ -288,7 +292,7 @@ export const requestOtpForResetPassword = async (req, res) => {
       const hashedOTP = await hashOTP(OTP);
 
       const mailOptions = {
-        from: "Chattr",
+        from: "chatrrislive@gmail.com",
         to: email,
         subject: "Account Verification",
         text: `OTP for Resetting your Chatrr Account Password is ${OTP}`,
@@ -368,7 +372,7 @@ export const forgotPassword = async (req, res) => {
         await updatedUser.save();
         const otpIndb = await OTPVerificationModel.findOneAndDelete({ email });
         const mailOptions = {
-          from: "Chattr",
+          from: "chatrrislive@gmail.com",
           to: email,
           subject: "Account Verification",
           text: `Hi, Your Password Has Been Changed Successfully.
@@ -537,9 +541,10 @@ export const updateUser = async (req, res) => {
   }
 };
 
-export const deleteUser = async (req, res) => {
+export const requestDeleteUser = async (req, res) => {
+  console.log(req.params);
   try {
-    const { phone } = req.body;
+    const { email } = req.body;
     const { id } = req.params;
 
     if (!id) {
@@ -548,13 +553,13 @@ export const deleteUser = async (req, res) => {
       });
     }
 
-    if (!phone) {
+    if (!email) {
       return res.send({
-        message: "Phone is Required to make a user deleletion request",
+        message: "Email is Required to make a user deleletion request",
       });
     } else {
       const user = await userModel.findOneAndDelete({
-        $and: [{ _id: id }, { phone: phone }],
+        $and: [{ _id: id }, { email: email }],
       });
       if (!user) {
         res.status(400).send({
@@ -562,9 +567,32 @@ export const deleteUser = async (req, res) => {
           message: "Please Type The Correct Phone No.",
         });
       } else {
+        const OTP = Math.floor(1000 + Math.random() * 9000).toString();
+
+        const hashedOTP = await hashOTP(OTP);
+  
+        const mailOptions = {
+          from: "chatrrislive@gmail.com",
+          to: email,
+          subject: "Account Verification",
+          text: `OTP for Deleting your Chatrr Account Password is ${OTP}`,
+        };
+  
+        transporter.sendMail(mailOptions, async (error, info) => {
+          if (error) {
+            return console.error(error.message);
+          }
+          console.log("Email sent :", info.response);
+  
+          const otpInDb = new OTPVerificationModel({
+            email: email,
+            OTP: hashedOTP,
+          }).save();
+          
+        });
         res.status(200).send({
           success: true,
-          message: "Account Deleted Successfully, Hope We see again soon",
+          message: "OTP Sent Successfully",
         });
       }
     }
@@ -575,6 +603,58 @@ export const deleteUser = async (req, res) => {
     });
   }
 };
+
+export const deleteAccount = async (req, res) => {
+  try {
+    const {otp} = req.body;
+  if(!otp){
+    return res.status(400).send({
+      success: false,
+      message: "Please enter otp sent to the registered email"
+    })
+  } else {
+    const OTP = await OTPVerificationModel.findOne({ email });
+      if (!OTP) {
+        res.status(400).send({
+          success: false,
+          message: "Invalid Email",
+        });
+      }
+
+      const verify = await compareOTP(otp, OTP.OTP);
+      if (!verify) {
+        res.status(400).send({
+          success: false,
+          message: "Incorrect OTP",
+        });
+      } else {
+        const timeNow = Date.now();
+
+        if (timeNow > OTP.expiresAt) {
+          await OTPVerificationModel.findOneAndDelete({ email });
+          return res.status(400).send({
+            success: false,
+            message: "OTP Has Expired, Kindly Request New OTP",
+          });
+        } else {
+          await OTPVerificationModel.findOneAndDelete({ email });
+          const user = await userModel.findOneAndDelete(
+            { email: email }
+          );
+        }
+        res.status(200).send({
+          success: true,
+          message: "OTP Verification Successfull. You're Account Has Been Deleted, Hope We See You Back Soon",
+        });
+      }
+  }
+  } catch (error) {
+    res.status(400).send({
+      success: false,
+      message: "Something went wrong"
+    });
+  }
+}
 
 export const blockAUser = async (req, res) => {
   try {

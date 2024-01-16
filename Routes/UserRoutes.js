@@ -1,5 +1,5 @@
 import express from 'express';
-import { blockAUser, deleteUser, fetchAllUsers, findUsers, forgotPassword, generateNewOTP, getUser, getUserPhoto, loginUser, newUser, requestOtpForResetPassword, searchUser, unblockUser, updateUser, verifyOTP } from '../Controllers/UserController.js';
+import { blockAUser, deleteAccount, fetchAllUsers, findUsers, forgotPassword, generateNewOTP, getUser, getUserPhoto, loginUser, newUser, requestDeleteUser, requestOtpForResetPassword, searchUser, unblockUser, updateUser, verifyOTP } from '../Controllers/UserController.js';
 import ExpressFormidable from 'express-formidable';
 import { requireSignIn } from '../MiddleWares/IsActive.js';
 import { ForgotPasswordValidator, signUpValidator } from '../Helpers/validators.js';
@@ -30,7 +30,7 @@ router.post('/request-otp', generateNewOTP);
 
 router.post('/login', loginUser);
 
-router.get('/fetch-users', requireSignIn, fetchAllUsers);
+router.get('/fetch-users', fetchAllUsers);
 
 router.get('/get-user/:id', getUser);
 
@@ -44,7 +44,9 @@ router.get('/user-auth', requireSignIn, (req, res) => {
 
 router.put('/update-user/:id', updateUser);
 
-router.delete('/delete-account/:id', deleteUser);
+router.post('/request-delete-account/:id', requestDeleteUser);
+
+router.delete('/delete-account/:id', deleteAccount);
 
 router.put('/reset-password-request', requestOtpForResetPassword);
 

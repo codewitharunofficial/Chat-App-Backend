@@ -1,6 +1,7 @@
 import ChatModel from "../Models/ChatModel.js";
 import ConversationModel from "../Models/ConversationModel.js";
 import userModel from "../Models/userModel.js";
+import cloudinary from "../Helpers/cloudinary.js";
 
 export const sendMessage = async (req, res) => {
   try {
@@ -207,12 +208,22 @@ export const getAllMessages = async (req, res) => {
 export const deleteMessage = async (req, res) => {
   try {
     const { id } = req.params;
+    const {publicId} = req.body;
     switch (true) {
       case !id:
         throw new Error("Message Id is required to make a delete request");
     }
 
     const message = await ChatModel.findByIdAndDelete({ _id: id });
+    if(publicId){
+      const deleteFromCloud = await cloudinary.uploader.destroy(publicId, (error, result) => {
+        if(result){
+          console.log(result);
+        } else{
+          console.log(error);
+        }
+      });
+    }
     if (!message) {
       res.status(201).send({
         success: false,
@@ -247,7 +258,7 @@ export const setMessagesAsRead = async (req, res) => {
       if (chat.read === true) {
        res.status(201).send({
           success: false,
-          message: "Already seen"
+          message: "Already Seen"
         })
       } else {
         await chat.updateOne(
@@ -270,7 +281,6 @@ export const setMessagesAsRead = async (req, res) => {
 };
 
 export const markMessageAsRead = async (req, res) => {
-  console.log(req.params);
   try {
     const { id } = req.params;
     switch (true) {

@@ -84,6 +84,7 @@ export const deleteProfilePhoto = async (req, res) => {
 };
 
 export const sendPhoto = async (req, res) => {
+  console.log(req.fields, req.files);
   try {
     const { sender, reciever } = req.fields;
     const { photo } = req.files;
