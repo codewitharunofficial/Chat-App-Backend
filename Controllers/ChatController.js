@@ -207,6 +207,7 @@ export const getAllMessages = async (req, res) => {
 
 export const deleteMessage = async (req, res) => {
   try {
+    console.log(req.body);
     const { id } = req.params;
     const {publicId} = req.body;
     switch (true) {

@@ -17,7 +17,7 @@ router.get('/chats/:id', getAllChats);
 
 router.post('/fetch-messages', getAllMessages);
 
-router.delete('/delete-message/:id', deleteMessage);
+router.post('/delete-message/:id', deleteMessage);
 
 router.post('/delete-convo/:id', deleteConversation);
 

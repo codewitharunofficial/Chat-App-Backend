@@ -46,7 +46,7 @@ router.put('/update-user/:id', updateUser);
 
 router.post('/request-delete-account/:id', requestDeleteUser);
 
-router.delete('/delete-account/:id', deleteAccount);
+router.post('/delete-account/:id', deleteAccount);
 
 router.put('/reset-password-request', requestOtpForResetPassword);
 

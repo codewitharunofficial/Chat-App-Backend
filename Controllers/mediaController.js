@@ -84,7 +84,6 @@ export const deleteProfilePhoto = async (req, res) => {
 };
 
 export const sendPhoto = async (req, res) => {
-  console.log(req.fields, req.files);
   try {
     const { sender, reciever } = req.fields;
     const { photo } = req.files;
@@ -113,16 +112,32 @@ export const sendPhoto = async (req, res) => {
       recieverId: reciever
     }).save();
 
-    const messages = new ChatModel({
+    const imageMessage = new ChatModel({
       sender: sender,
       reciever: reciever,
       message: result,
-    }).save();
+    });
 
-    const updateToConvo = await ConversationModel.findOneAndUpdate({$or: [
-      { senderId: sender, recieverId: reciever },
-      { senderId: reciever, recieverId: sender },
-    ]}, {chat: messages}, {new: true});
+    await imageMessage.save();
+
+    if(imageMessage){
+      const messages = await ChatModel.find({
+        $or: [
+          { sender: sender, reciever: reciever },
+          { sender: reciever, reciever: sender },
+        ],
+      }).sort({ createdAt: -1 });
+      const chat = await ConversationModel.findOneAndUpdate(
+        {
+          $or: [
+            { senderId: sender, receiverId: reciever },
+            { senderId: reciever, receiverId: sender },
+          ],
+        },
+        { chat: messages[0] },
+        { new: true }
+      );
+    }
 
     res.status(200).send({
       success: true,
