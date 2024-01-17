@@ -100,7 +100,7 @@ export const getAllChats = async (req, res) => {
 
     const chats = await ConversationModel.find({
       $or: [{ senderId: id }, { receiverId: id }],
-    }).sort({"chat.updaedAt": -1});
+    }).sort({"chat.updatedAt": -1});
 
     if (!chats) {
       res.status(401).send({
