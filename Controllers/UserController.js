@@ -809,3 +809,33 @@ export const findUsers = async (req, res) => {
     })
   }
 }
+
+export const getUserOnContacts = async (req, res) => {
+  try {
+    console.log(req.body);
+  if(!req.body) {
+    return res.status(201).send({
+      success: false,
+      message: "Id is required"
+    })
+  } else {
+    const users = await userModel.find({"phone": {"$in" : req.body}});
+    if(!users){
+      return res.status(201).send({
+        success: false,
+        message: "No Users Found"
+      })
+    } else{
+      res.status(200).send({
+        users
+      })
+    }
+  }
+  } catch (error) {
+    res.status(400).send({
+      success: false,
+      message: "Something went wrong",
+      error: error.message
+    })
+  }
+}

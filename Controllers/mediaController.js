@@ -98,7 +98,8 @@ export const sendPhoto = async (req, res) => {
     }
 
     const result = await cloudinary.uploader.upload(photo.path, {
-      public_id: `${sender}_image`,
+      public_id: `${sender}_${Math.floor(Math.random() * 9000 + 1000)}_image`,
+      resource_type: "image"
     });
 
     switch (true) {
@@ -116,6 +117,7 @@ export const sendPhoto = async (req, res) => {
       sender: sender,
       reciever: reciever,
       message: result,
+      type: "Image"
     });
 
     await imageMessage.save();
@@ -137,13 +139,12 @@ export const sendPhoto = async (req, res) => {
         { chat: messages[0] },
         { new: true }
       );
+      res.status(200).send({
+        success: true,
+        message: "Attachment Sent Successfully",
+        messages,
+      });
     }
-
-    res.status(200).send({
-      success: true,
-      message: "Attachment Sent Successfully",
-      messages,
-    });
   } catch (error) {
     res.status(400).send({
       success: false,
@@ -169,7 +170,7 @@ export const sendVoiceMessage = async (req, res) => {
     }
 
     const result = await cloudinary.uploader.upload(audio.path, {
-      public_id: `${sender}_voice`,
+      public_id: `${sender}_${Math.floor(Math.random() * 9000 + 1000)}_voice`,
       resource_type: "auto",
     });
 
@@ -183,6 +184,7 @@ export const sendVoiceMessage = async (req, res) => {
       sender: sender,
       reciever: receiver,
       message: result,
+      type: "Voice"
     });
 
     await voiceMessage.save();
@@ -221,6 +223,143 @@ export const sendVoiceMessage = async (req, res) => {
     });
   }
 };
+
+export const sendVideo = async (req, res)=> {
+
+  try {
+    const { sender, reciever } = req.fields;
+    const { video } = req.files;
+
+    switch (true) {
+      case !sender:
+        throw new Error("Sender Is  required");
+      case !reciever:
+        throw new Error("Receiver Is  required");
+      case !video:
+        throw new Error("No Video Found");
+    }
+
+    const result = await cloudinary.uploader.upload(video.path, {
+      public_id: `${sender}_${Math.floor(Math.random() * 9000 + 1000)}_video`,
+      resource_type: "video",
+    });
+
+    const videoAttachment = new ChatAttachmentModel({
+      senderId: sender,
+      recieverId: reciever,
+      video: result,
+    }).save();
+
+    const videoMessage = new ChatModel({
+      sender: sender,
+      reciever: reciever,
+      message: result,
+      type: "Video"
+    });
+
+    await videoMessage.save();
+
+    if (videoMessage) {
+      const messages = await ChatModel.find({
+        $or: [
+          { sender: sender, reciever: reciever },
+          { sender: reciever, reciever: sender },
+        ],
+      }).sort({ createdAt: -1 });
+
+      const chat = await ConversationModel.findOneAndUpdate(
+        {
+          $or: [
+            { senderId: sender, receiverId: reciever },
+            { senderId: reciever, receiverId: sender },
+          ],
+        },
+        { chat: messages[0] },
+        { new: true }
+      );
+      res.status(200).send({
+        success: true,
+        message: "Video Sent Successfully",
+        videoMessage,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(400).send({
+      success: false,
+      message: "Sommething Went Wrong"
+    });
+  }
+}
+
+
+export const sendAudio = async (req, res)=> {
+  console.log(req.fields, req.files);
+  try {
+    const { sender, receiver } = req.fields;
+    const { audio } = req.files;
+
+    switch (true) {
+      case !sender:
+        throw new Error("Sender Is  required");
+      case !receiver:
+        throw new Error("Receiver Is  required");
+      case !audio:
+        throw new Error("No Video Found");
+    }
+
+    const result = await cloudinary.uploader.upload(audio.path, {
+      public_id: `${sender}_${Math.floor(Math.random() * 9000 + 1000)}_audio`,
+      resource_type: "auto",
+    });
+
+    const audioAttachment = new ChatAttachmentModel({
+      senderId: sender,
+      recieverId: receiver,
+      audio: result,
+    }).save();
+
+    const audioMessage = new ChatModel({
+      sender: sender,
+      reciever: receiver,
+      message: result,
+      type: "Audio"
+    });
+
+    await audioMessage.save();
+
+    if (audioMessage) {
+      const messages = await ChatModel.find({
+        $or: [
+          { sender: sender, reciever: receiver },
+          { sender: receiver, reciever: sender },
+        ],
+      }).sort({ createdAt: -1 });
+
+      const chat = await ConversationModel.findOneAndUpdate(
+        {
+          $or: [
+            { senderId: sender, receiverId: receiver },
+            { senderId: receiver, receiverId: sender },
+          ],
+        },
+        { chat: messages[0] },
+        { new: true }
+      );
+      res.status(200).send({
+        success: true,
+        message: "Audio Sent Successfully",
+        audioMessage,
+      });
+    }
+  
+  } catch (error) {
+    res.status(400).send({
+      success: false,
+      message: "Sommething Went Wrong"
+    });
+  }
+}
 
 //fetch all attachments send to a perticular chat
 

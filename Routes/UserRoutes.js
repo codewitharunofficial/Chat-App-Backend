@@ -1,5 +1,5 @@
 import express from 'express';
-import { blockAUser, deleteAccount, fetchAllUsers, findUsers, forgotPassword, generateNewOTP, getUser, getUserPhoto, loginUser, newUser, requestDeleteUser, requestOtpForResetPassword, searchUser, unblockUser, updateUser, verifyOTP } from '../Controllers/UserController.js';
+import { blockAUser, deleteAccount, fetchAllUsers, findUsers, forgotPassword, generateNewOTP, getUser, getUserOnContacts, getUserPhoto, loginUser, newUser, requestDeleteUser, requestOtpForResetPassword, searchUser, unblockUser, updateUser, verifyOTP } from '../Controllers/UserController.js';
 import ExpressFormidable from 'express-formidable';
 import { requireSignIn } from '../MiddleWares/IsActive.js';
 import { ForgotPasswordValidator, signUpValidator } from '../Helpers/validators.js';
@@ -30,7 +30,10 @@ router.post('/request-otp', generateNewOTP);
 
 router.post('/login', loginUser);
 
-router.get('/fetch-users', fetchAllUsers);
+// router.get('/fetch-users', fetchAllUsers);
+router.post('/fetch-users', getUserOnContacts);
+
+
 
 router.get('/get-user/:id', getUser);
 

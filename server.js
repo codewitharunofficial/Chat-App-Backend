@@ -11,6 +11,7 @@ import { Server } from "socket.io";
 import ConversationModel from "./Models/ConversationModel.js";
 import ChatModel from "./Models/ChatModel.js";
 import userModel from "./Models/userModel.js";
+import StatusRoutes from './Routes/StatusRoutes.js';
 
 dotenv.config();
 
@@ -129,6 +130,10 @@ io.on("connection", (socket) => {
     ).sort({ createdAt: -1 });
 
     io.emit("recieved-message", { newMessage, messages });
+
+    io.on("update-status", async(status) => {
+      console.log(status);
+    })
   });
 });
 
@@ -145,6 +150,8 @@ app.use(express.json());
 app.use("/api/v1/messages", MessageRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/media", mediaRoutes);
+app.use("/api/v1/status", StatusRoutes);
+
 
 server.listen(port, (req, res) => {
   console.log(`Server is Running at http://localhost:${port}`);
