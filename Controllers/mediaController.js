@@ -85,7 +85,7 @@ export const deleteProfilePhoto = async (req, res) => {
 
 export const sendPhoto = async (req, res) => {
   try {
-    const { sender, reciever } = req.fields;
+    const { sender, reciever, textMessage, reply } = req.fields;
     const { photo } = req.files;
 
     switch (true) {
@@ -110,14 +110,16 @@ export const sendPhoto = async (req, res) => {
     const attachmentImage = new ChatAttachmentModel({
       image: result,
       senderId: sender,
-      recieverId: reciever
+      recieverId: reciever,
+      TextMessage: textMessage ? textMessage : ""
     }).save();
 
     const imageMessage = new ChatModel({
       sender: sender,
       reciever: reciever,
       message: result,
-      type: "Image"
+      type: "Image",
+      reply: reply ? reply : null
     });
 
     await imageMessage.save();

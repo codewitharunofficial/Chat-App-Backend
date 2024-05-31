@@ -73,6 +73,7 @@ io.on("connection", (socket) => {
     }
   });
 
+
   socket.on("log-out", async (data) => {
     // console.log(data);
     const isOffline = await userModel.findByIdAndUpdate(
@@ -92,8 +93,10 @@ io.on("connection", (socket) => {
     );
   });
 
+  //sending a message
+
   socket.on("send-message", async (data) => {
-    // console.log("Recieved a message in server side", data);
+   console.log("Recieved a message in server side", data);
 
     const sender = await userModel.findById({ _id: data.sender });
     const reciever = await userModel.findById({ _id: data.reciever });
@@ -104,6 +107,7 @@ io.on("connection", (socket) => {
       message: data,
       from: sender,
       to: reciever,
+      reply: data?.reply ? data.reply : null
     });
 
     await newMessage.save();
@@ -128,14 +132,62 @@ io.on("connection", (socket) => {
       },
       { new: true }
     ).sort({ createdAt: -1 });
-
     io.emit("recieved-message", { newMessage, messages });
+    });
 
-    io.on("update-status", async(status) => {
-      console.log(status);
-    })
+  //replying message
+
+  socket.on("reply-message", async (data) => {
+    console.log("Recieved a message in server side", data);
+
+    const sender = await userModel.findById({ _id: data.sender });
+    const reciever = await userModel.findById({ _id: data.reciever });
+
+    
+  const reply = new ChatModel({
+    sender: data.sender,
+    reciever: data.reciever,
+    message: data?.message,
+    from: sender,
+    to: reciever,
+    isReplied: true,
+    repliedBy: data?.sender,
+    reply: data?.reply,
+    type: data?.type
   });
-});
+
+  await reply.save();
+    
+    const messages = await ChatModel.find({
+      $or: [
+        { sender: data.sender, reciever: data.reciever },
+        { sender: data.reciever, reciever: data.sender },
+      ],
+    }).sort({ createdAt: -1 });
+
+    const chat = await ConversationModel.updateOne(
+      { _id: data.convoId },
+      {
+        $push: { chat: reply },
+        $set: {
+          read: false,
+          senderId: data.sender,
+          receiverId: data.reciever,
+          sender: sender,
+          receiver: reciever,
+        },
+      },
+      { new: true }
+    ).sort({ createdAt: -1 });
+
+    io.emit("recieved-message", { reply, messages });
+  });
+
+  });
+
+
+
+
 
 app.use(
   cors({
@@ -155,4 +207,4 @@ app.use("/api/v1/status", StatusRoutes);
 
 server.listen(port, (req, res) => {
   console.log(`Server is Running at http://localhost:${port}`);
-});
+})

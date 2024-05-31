@@ -24,7 +24,18 @@ const MessageSchema = new mongoose.Schema({
       type: String,
       default: "Text",
       enum: ["Text", "Audio", "Video", "Image", "Voice","Document", "Location"]
-    }
+    },
+    reply: {
+      type: {},
+    },
+    isReplied: {
+      type: Boolean,
+      default: false,
+      enum: [false, true]
+    },
+    repliedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+    },
     
 }, {timestamps: true});
 

@@ -12,6 +12,9 @@ const ChatAttachmentSchema = new mongoose.Schema({
     recieverId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    },
+    TextMessage: {
+        type: String
     }
 }, {timestamps: true});
 

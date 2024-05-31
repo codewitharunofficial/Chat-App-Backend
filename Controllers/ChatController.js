@@ -5,7 +5,7 @@ import cloudinary from "../Helpers/cloudinary.js";
 
 export const sendMessage = async (req, res) => {
   try {
-    const { sender, reciever, message } = req.body;
+    const { sender, reciever, message, reply } = req.body;
     switch (true) {
       case !sender:
         throw new Error("Sender Is Required");
@@ -19,6 +19,7 @@ export const sendMessage = async (req, res) => {
       sender: sender,
       reciever: reciever,
       message: { message: message },
+      reply: reply ? reply : null
     });
     await coversation.save();
 
