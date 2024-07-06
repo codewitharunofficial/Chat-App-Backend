@@ -12,6 +12,7 @@ import ConversationModel from "./Models/ConversationModel.js";
 import ChatModel from "./Models/ChatModel.js";
 import userModel from "./Models/userModel.js";
 import StatusRoutes from './Routes/StatusRoutes.js';
+import CallModel from "./Models/CallModel.js";
 
 dotenv.config();
 
@@ -183,11 +184,42 @@ io.on("connection", (socket) => {
     io.emit("recieved-message", { reply, messages });
   });
 
+  //For Calling
+
+  socket.on('call', async ({ sender, receiver, senderPhoto, name }) => {
+    io.emit('incoming-call', {sender, receiver, senderPhoto, name});
+    const call = new CallModel({ sender: sender, startTime: new Date(), receiver: receiver });
+    await call.save();
   });
 
 
+  socket.on('end-call', async ({ended}) => {
+    const call = await CallModel.findById(socket.callId);
+    if (call) {
+      call.endTime = new Date();
+      call.duration = (call.endTime - call.startTime) / 1000; // Duration in seconds
+      await call.save();
+    }
+    io.emit('end-call', {ended});
+    console.log('call ended')
+  });
 
 
+  socket.on('offer', ({ offer, receiver }) => {
+    io.emit('offer', {offer, receiver});
+    console.log("Offer Received");
+  });
+
+  socket.on('answer-call', ({peerId, answer}) => {
+    io.emit('call-answered', {answer, peerId});
+    console.log("Call is being answered...");
+  });
+
+  socket.on('ice-candidate', (candidate) => {
+    io.emit('ice-candidate', candidate);
+    console.log('Connection is being established....');
+  });
+  });
 
 app.use(
   cors({
