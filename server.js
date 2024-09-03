@@ -11,7 +11,7 @@ import { Server } from "socket.io";
 import ConversationModel from "./Models/ConversationModel.js";
 import ChatModel from "./Models/ChatModel.js";
 import userModel from "./Models/userModel.js";
-import StatusRoutes from './Routes/StatusRoutes.js';
+import StatusRoutes from "./Routes/StatusRoutes.js";
 import CallModel from "./Models/CallModel.js";
 
 dotenv.config();
@@ -53,7 +53,7 @@ io.on("connection", (socket) => {
       socket.on("disconnect", async () => {
         const isOffline = await userModel.findByIdAndUpdate(
           { _id: data },
-          { Is_Online: "false" , lastseen: Date.now()},
+          { Is_Online: "false", lastseen: Date.now() },
           { new: true }
         );
         console.log(`${isOffline.name} is Offline`);
@@ -74,30 +74,29 @@ io.on("connection", (socket) => {
     }
   });
 
-
   socket.on("log-out", async (data) => {
     // console.log(data);
     const isOffline = await userModel.findByIdAndUpdate(
       { _id: data },
       { Is_Online: "false", lastseen: Date.now() },
-      {new: true}
+      { new: true }
     );
     const updateSender = await ConversationModel.updateMany(
       { senderId: data },
       { sender: isOffline },
-      {new: true}
+      { new: true }
     );
     const updateReceiver = await ConversationModel.updateMany(
       { receiverId: data },
       { receiver: isOffline },
-      {new: true}
+      { new: true }
     );
   });
 
   //sending a message
 
   socket.on("send-message", async (data) => {
-   console.log("Recieved a message in server side", data);
+    console.log("Recieved a message in server side", data);
 
     const sender = await userModel.findById({ _id: data.sender });
     const reciever = await userModel.findById({ _id: data.reciever });
@@ -108,7 +107,7 @@ io.on("connection", (socket) => {
       message: data,
       from: sender,
       to: reciever,
-      reply: data?.reply ? data.reply : null
+      reply: data?.reply ? data.reply : null,
     });
 
     await newMessage.save();
@@ -134,7 +133,7 @@ io.on("connection", (socket) => {
       { new: true }
     ).sort({ createdAt: -1 });
     io.emit("recieved-message", { newMessage, messages });
-    });
+  });
 
   //replying message
 
@@ -144,21 +143,20 @@ io.on("connection", (socket) => {
     const sender = await userModel.findById({ _id: data.sender });
     const reciever = await userModel.findById({ _id: data.reciever });
 
-    
-  const reply = new ChatModel({
-    sender: data.sender,
-    reciever: data.reciever,
-    message: data?.message,
-    from: sender,
-    to: reciever,
-    isReplied: true,
-    repliedBy: data?.sender,
-    reply: data?.reply,
-    type: data?.type
-  });
+    const reply = new ChatModel({
+      sender: data.sender,
+      reciever: data.reciever,
+      message: data?.message,
+      from: sender,
+      to: reciever,
+      isReplied: true,
+      repliedBy: data?.sender,
+      reply: data?.reply,
+      type: data?.type,
+    });
 
-  await reply.save();
-    
+    await reply.save();
+
     const messages = await ChatModel.find({
       $or: [
         { sender: data.sender, reciever: data.reciever },
@@ -186,40 +184,68 @@ io.on("connection", (socket) => {
 
   //For Calling
 
-  socket.on('call', async ({ sender, receiver, senderPhoto, name }) => {
-    io.emit('incoming-call', {sender, receiver, senderPhoto, name});
-    const call = new CallModel({ sender: sender, startTime: new Date(), receiver: receiver });
+  socket.on("call", async ({ sender, receiver, senderPhoto, name }) => {
+    const caller = await userModel.findById({_id: sender});
+    const reciever = await userModel.findById({_id: receiver});
+    const call = new CallModel({
+      sender: sender,
+      receiver: receiver,
+      senderName: caller.name,
+      receiverName: reciever.name,
+      senderPhoto: caller?.profilePhoto?.secure_url && caller.profilePhoto.secure_url  ,
+      receiverPhoto: reciever?.profilePhoto?.secure_url && reciever.profilePhoto.secure_url,
+      // startTime: Date.now()
+    });
+    io.emit("incoming-call", { sender, receiver, senderPhoto, name, callId: call._id });
     await call.save();
   });
 
-
-  socket.on('end-call', async ({ended}) => {
-    const call = await CallModel.findById(socket.callId);
-    if (call) {
-      call.endTime = new Date();
+  socket.on("end-call", async ({ ended, callId }) => {
+    const call = await CallModel.findById(callId);
+    if (call && call.startTime) {
+      call.endTime = Date.now();
       call.duration = (call.endTime - call.startTime) / 1000; // Duration in seconds
       await call.save();
     }
-    io.emit('end-call', {ended});
-    console.log('call ended')
+    io.emit("end-call", { ended });
   });
 
-
-  socket.on('offer', ({ offer, receiver }) => {
-    io.emit('offer', {offer, receiver});
-    console.log("Offer Received");
+  socket.on("offer", ({ offer, receiver }) => {
+    io.emit("offer", { offer, receiver });
+    console.log(offer, receiver);
   });
 
-  socket.on('answer-call', ({peerId, answer}) => {
-    io.emit('call-answered', {answer, peerId});
+  socket.on("answer-call", async ({ peerId, answer, callId }) => {
+    const call = await CallModel.findByIdAndUpdate({_id: callId}, {startTime: new Date()}, {new: true});
+    io.emit("call-answered", { answer, peerId, callId });
     console.log("Call is being answered...");
   });
 
-  socket.on('ice-candidate', (candidate) => {
-    io.emit('ice-candidate', candidate);
-    console.log('Connection is being established....');
+  socket.on("ice-candidate", (candidate) => {
+    console.log("Connection is being established....");
+    io.emit("ice-candidate", candidate);
+    console.log("Connection established....");
+
   });
+
+  //Fetching Call-Logs For A User:
+  socket.on("call-logs", async ({ sender }) => {
+    try {
+      const calls = await CallModel.find({
+        $or: [{ sender: sender }, { receiver: sender }],
+      }).sort({ createdAt: -1 });
+      if (calls.length === 0) {
+        io.emit("call-logs", { calls: [] });
+        console.log("No Call Logs Found For You");
+      } else {
+        io.emit("call-logs", { calls });
+        console.log(calls);
+      }
+    } catch (error) {
+      console.log(error);
+    }
   });
+});
 
 app.use(
   cors({
@@ -236,7 +262,6 @@ app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/media", mediaRoutes);
 app.use("/api/v1/status", StatusRoutes);
 
-
 server.listen(port, (req, res) => {
   console.log(`Server is Running at http://localhost:${port}`);
-})
+});

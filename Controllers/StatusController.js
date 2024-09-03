@@ -7,6 +7,9 @@ export const uploadStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.files;
+    const {caption} =  req.fields;
+    // console.log(req.files);
+    console.log(req.fields);
 
     switch (true) {
       case !id:
@@ -49,6 +52,7 @@ export const uploadStatus = async (req, res) => {
             status.type === "image/png"
               ? "Image"
               : "Video",
+              caption: caption ? caption : null
         });
         await story.save();
         const userStories = await UserStoriesModel.find({ authorId: id });
