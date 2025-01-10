@@ -281,7 +281,7 @@ app.use("/keep-me-alive", () => {
 
 cron.schedule("* * * * *", () => {
   axios
-    .get("android.chatrr-app.onrender.com/keep-me-alive")
+    .get("https://android-chatrr-app.onrender.com/keep-me-alive")
     .then((res) => {
       console.log("Server Pinged and Alive");
     })
