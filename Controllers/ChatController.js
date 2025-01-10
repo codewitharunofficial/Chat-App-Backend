@@ -40,30 +40,29 @@ export const sendMessage = async (req, res) => {
 export const createConvo = async (req, res) => {
   try {
     const { sender, receiver } = req.body;
+    console.log(req.body);
 
-    const user1 = await userModel.findOne({ _id: receiver });
+    const user1 = await userModel.findOne({ phone: receiver });
+    const user2 = await userModel.findOne({ phone: sender });
 
     if (!user1) {
       res.status(201).send({
         success: false,
         message: "No user1 Found",
       });
-    } else {
-      const Convo = await ConversationModel.findOne({
-        $or: [
-          { senderId: sender, receiverId: receiver },
-          { senderId: receiver, receiverId: sender },
-        ],
-      });
-
-      const user2 = await userModel.findOne({ _id: sender });
-
       if (!user2) {
         res.status(201).send({
           success: false,
           message: "No user2 Found",
         });
       }
+    } else {
+      const Convo = await ConversationModel.findOne({
+        $or: [
+          { senderId: user2._id, receiverId: user1._id },
+          { senderId: user1._id, receiverId: user2._id },
+        ],
+      });
 
       if (Convo) {
         res.status(200).send({
@@ -75,8 +74,8 @@ export const createConvo = async (req, res) => {
         const newConvo = new ConversationModel({
           sender: user2,
           receiver: user1,
-          receiverId: receiver,
-          senderId: sender,
+          receiverId: user1._id,
+          senderId: user2._id,
         });
         await newConvo.save();
         res.status(200).send({

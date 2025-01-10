@@ -13,6 +13,8 @@ import ChatModel from "./Models/ChatModel.js";
 import userModel from "./Models/userModel.js";
 import StatusRoutes from "./Routes/StatusRoutes.js";
 import CallModel from "./Models/CallModel.js";
+import cron from "node-cron";
+import axios from "axios";
 
 dotenv.config();
 
@@ -185,18 +187,26 @@ io.on("connection", (socket) => {
   //For Calling
 
   socket.on("call", async ({ sender, receiver, senderPhoto, name }) => {
-    const caller = await userModel.findById({_id: sender});
-    const reciever = await userModel.findById({_id: receiver});
+    const caller = await userModel.findById({ _id: sender });
+    const reciever = await userModel.findById({ _id: receiver });
     const call = new CallModel({
       sender: sender,
       receiver: receiver,
       senderName: caller.name,
       receiverName: reciever.name,
-      senderPhoto: caller?.profilePhoto?.secure_url && caller.profilePhoto.secure_url  ,
-      receiverPhoto: reciever?.profilePhoto?.secure_url && reciever.profilePhoto.secure_url,
+      senderPhoto:
+        caller?.profilePhoto?.secure_url && caller.profilePhoto.secure_url,
+      receiverPhoto:
+        reciever?.profilePhoto?.secure_url && reciever.profilePhoto.secure_url,
       // startTime: Date.now()
     });
-    io.emit("incoming-call", { sender, receiver, senderPhoto, name, callId: call._id });
+    io.emit("incoming-call", {
+      sender,
+      receiver,
+      senderPhoto,
+      name,
+      callId: call._id,
+    });
     await call.save();
   });
 
@@ -216,7 +226,11 @@ io.on("connection", (socket) => {
   });
 
   socket.on("answer-call", async ({ peerId, answer, callId }) => {
-    const call = await CallModel.findByIdAndUpdate({_id: callId}, {startTime: new Date()}, {new: true});
+    const call = await CallModel.findByIdAndUpdate(
+      { _id: callId },
+      { startTime: new Date() },
+      { new: true }
+    );
     io.emit("call-answered", { answer, peerId, callId });
     console.log("Call is being answered...");
   });
@@ -225,7 +239,6 @@ io.on("connection", (socket) => {
     console.log("Connection is being established....");
     io.emit("ice-candidate", candidate);
     console.log("Connection established....");
-
   });
 
   //Fetching Call-Logs For A User:
@@ -261,6 +274,21 @@ app.use("/api/v1/messages", MessageRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/media", mediaRoutes);
 app.use("/api/v1/status", StatusRoutes);
+
+app.use("/keep-me-alive", () => {
+  console.log("Server Is Alive");
+});
+
+cron.schedule("* * * * *", () => {
+  axios
+    .get("android.chatrr-app.onrender.com/keep-me-alive")
+    .then((res) => {
+      console.log("Server Pinged and Alive");
+    })
+    .catch((err) => {
+      console.log("Error while pinging server", err);
+    });
+});
 
 server.listen(port, (req, res) => {
   console.log(`Server is Running at http://localhost:${port}`);

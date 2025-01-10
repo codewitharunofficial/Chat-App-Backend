@@ -424,6 +424,7 @@ export const forgotPassword = async (req, res) => {
 };
 
 export const fetchAllUsers = async (req, res) => {
+  console.log("Getting users");
   try {
     const users = await userModel
       .find({})
